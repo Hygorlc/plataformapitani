@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pitani-academy-dev",
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": ["-lc", "export PATH=\"/Users/hygor/.nvm/versions/node/v24.18.0/bin:$PATH\" && npm run dev"],
+      "port": 3000
+    }
+  ]
+}

@@ -131,6 +131,40 @@ export async function updateModule(moduleId: string, courseId: string, formData:
   revalidatePath(`/admin/courses/${courseId}/edit`);
 }
 
+export async function updateModuleWithLessons(
+  moduleId: string,
+  courseId: string,
+  lessonIds: string[],
+  formData: FormData
+) {
+  const supabase = await createClient();
+
+  const moduleTitle = String(formData.get("module_title") ?? "").trim();
+  if (!moduleTitle) throw new Error("O título do módulo é obrigatório.");
+
+  const { error: moduleError } = await supabase
+    .from("modules")
+    .update({ title: moduleTitle })
+    .eq("id", moduleId);
+  if (moduleError) throw new Error(moduleError.message);
+
+  for (const lessonId of lessonIds) {
+    const title = String(formData.get(`lesson_${lessonId}_title`) ?? "").trim();
+    const videoUrl = String(formData.get(`lesson_${lessonId}_video_url`) ?? "").trim();
+    const description =
+      String(formData.get(`lesson_${lessonId}_description`) ?? "").trim() || null;
+    if (!title || !videoUrl) continue;
+
+    const { error: lessonError } = await supabase
+      .from("lessons")
+      .update({ title, video_url: videoUrl, description })
+      .eq("id", lessonId);
+    if (lessonError) throw new Error(lessonError.message);
+  }
+
+  revalidatePath(`/admin/courses/${courseId}/edit`);
+}
+
 export async function deleteModule(moduleId: string, courseId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("modules").delete().eq("id", moduleId);

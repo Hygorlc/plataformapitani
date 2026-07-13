@@ -5,10 +5,9 @@ import {
   updateCourse,
   deleteCourse,
   createModule,
-  updateModule,
+  updateModuleWithLessons,
   deleteModule,
   createLesson,
-  updateLesson,
   deleteLesson,
 } from "@/lib/actions/admin/courses";
 import { PublishToggle } from "@/components/admin/PublishToggle";
@@ -110,80 +109,82 @@ export default async function EditCoursePage({
         </h2>
 
         <div className="flex flex-col gap-4">
-          {(modules ?? []).map((mod) => (
-            <div key={mod.id} className="rounded-xl border border-border bg-surface p-4">
-              <div className="flex items-center gap-2">
-                <form
-                  action={updateModule.bind(null, mod.id, course.id)}
-                  className="flex flex-1 items-center gap-2"
-                >
-                  <input
-                    name="title"
-                    defaultValue={mod.title}
-                    className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
-                  />
-                  <Button type="submit" variant="secondary" size="sm">
-                    Salvar
-                  </Button>
-                </form>
-                <form action={deleteModule.bind(null, mod.id, course.id)}>
-                  <button type="submit" className="text-status-danger hover:opacity-80">
-                    <Trash2 size={16} />
-                  </button>
-                </form>
-              </div>
+          {(modules ?? []).map((mod) => {
+            const moduleLessons = (lessons ?? []).filter((l) => l.module_id === mod.id);
 
-              <div className="mt-4 flex flex-col gap-3">
-                {(lessons ?? [])
-                  .filter((l) => l.module_id === mod.id)
-                  .map((lesson) => (
-                    <div
-                      key={lesson.id}
-                      className="rounded-lg border border-border bg-background p-3"
+            return (
+              <div key={mod.id} className="rounded-xl border border-border bg-surface p-4">
+                <form
+                  action={updateModuleWithLessons.bind(
+                    null,
+                    mod.id,
+                    course.id,
+                    moduleLessons.map((l) => l.id)
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      name="module_title"
+                      defaultValue={mod.title}
+                      className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      formAction={deleteModule.bind(null, mod.id, course.id)}
+                      className="text-status-danger hover:opacity-80"
                     >
-                      <div className="flex items-start gap-2">
-                        <form
-                          action={updateLesson.bind(null, lesson.id, course.id)}
-                          className="flex flex-1 flex-col gap-2"
-                        >
-                          <input
-                            name="title"
-                            defaultValue={lesson.title}
-                            placeholder="Título da aula"
-                            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
-                          />
-                          <input
-                            name="video_url"
-                            defaultValue={lesson.video_url}
-                            placeholder="Link do YouTube/Vimeo"
-                            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
-                          />
-                          <textarea
-                            name="description"
-                            defaultValue={lesson.description ?? ""}
-                            placeholder="Descrição (opcional)"
-                            rows={2}
-                            className="resize-none rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
-                          />
-                          <Button type="submit" variant="secondary" size="sm" className="w-fit">
-                            Salvar Aula
-                          </Button>
-                        </form>
-                        <form action={deleteLesson.bind(null, lesson.id, course.id)}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-3">
+                    {moduleLessons.map((lesson) => (
+                      <div
+                        key={lesson.id}
+                        className="rounded-lg border border-border bg-background p-3"
+                      >
+                        <div className="flex items-start gap-2">
+                          <div className="flex flex-1 flex-col gap-2">
+                            <input
+                              name={`lesson_${lesson.id}_title`}
+                              defaultValue={lesson.title}
+                              placeholder="Título da aula"
+                              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                            />
+                            <input
+                              name={`lesson_${lesson.id}_video_url`}
+                              defaultValue={lesson.video_url}
+                              placeholder="Link do YouTube/Vimeo"
+                              className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                            />
+                            <textarea
+                              name={`lesson_${lesson.id}_description`}
+                              defaultValue={lesson.description ?? ""}
+                              placeholder="Descrição (opcional)"
+                              rows={2}
+                              className="resize-none rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                            />
+                          </div>
                           <button
                             type="submit"
+                            formAction={deleteLesson.bind(null, lesson.id, course.id)}
                             className="text-status-danger hover:opacity-80"
                           >
                             <Trash2 size={14} />
                           </button>
-                        </form>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+
+                  <Button type="submit" size="sm" className="mt-4 w-fit">
+                    Salvar Módulo
+                  </Button>
+                </form>
 
                 <form
                   action={createLesson.bind(null, mod.id, course.id)}
-                  className="flex flex-col gap-2 rounded-lg border border-dashed border-border p-3"
+                  className="mt-3 flex flex-col gap-2 rounded-lg border border-dashed border-border p-3"
                 >
                   <input
                     name="title"
@@ -208,8 +209,8 @@ export default async function EditCoursePage({
                   </Button>
                 </form>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           <form
             action={createModule.bind(null, course.id)}

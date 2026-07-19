@@ -157,12 +157,15 @@ export type Database = {
       courses: {
         Row: {
           created_at: string
+          category: string | null
           created_by: string | null
           description: string | null
           id: string
           instructor_avatar_url: string | null
           instructor_name: string | null
+          language: string | null
           price_cents: number
+          sales_country: string | null
           slug: string
           status: string
           thumbnail_url: string | null
@@ -170,13 +173,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           instructor_avatar_url?: string | null
           instructor_name?: string | null
+          language?: string | null
           price_cents?: number
+          sales_country?: string | null
           slug: string
           status?: string
           thumbnail_url?: string | null
@@ -184,13 +190,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           instructor_avatar_url?: string | null
           instructor_name?: string | null
+          language?: string | null
           price_cents?: number
+          sales_country?: string | null
           slug?: string
           status?: string
           thumbnail_url?: string | null

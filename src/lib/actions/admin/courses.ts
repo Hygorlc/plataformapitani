@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { TablesUpdate } from "@/types/database.types";
 
 function slugify(input: string): string {
   return input
@@ -14,7 +16,40 @@ function slugify(input: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-export async function createCourse(formData: FormData) {
+const MAX_COVER_BYTES = 5 * 1024 * 1024;
+const COVER_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+};
+
+async function uploadCoverImage(file: File, slug: string): Promise<string> {
+  const ext = COVER_TYPES[file.type];
+  if (!ext) throw new Error("A imagem deve ser JPG ou PNG.");
+  if (file.size > MAX_COVER_BYTES) throw new Error("A imagem deve ter no máximo 5 MB.");
+
+  const admin = createAdminClient();
+  const path = `${slug}-${Date.now()}.${ext}`;
+
+  const { error } = await admin.storage
+    .from("course-covers")
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw new Error(`Falha no upload da imagem: ${error.message}`);
+
+  const { data } = admin.storage.from("course-covers").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function uniqueSlug(base: string): Promise<string> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("courses").select("slug").like("slug", `${base}%`);
+  const taken = new Set((data ?? []).map((c) => c.slug));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
+}
+
+export async function createCourseWizard(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,20 +57,35 @@ export async function createCourse(formData: FormData) {
   if (!user) throw new Error("Não autenticado.");
 
   const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim() || null;
+  if (!title) throw new Error("O nome do produto é obrigatório.");
+
+  const description = String(formData.get("description") ?? "").trim().slice(0, 2000) || null;
+  const language = String(formData.get("language") ?? "").trim() || null;
+  const salesCountry = String(formData.get("sales_country") ?? "").trim() || null;
+  const category = String(formData.get("category") ?? "").trim() || null;
   const instructorName = String(formData.get("instructor_name") ?? "").trim() || null;
   const priceReais = Number(formData.get("price") ?? 0);
   const priceCents = Math.max(0, Math.round(priceReais * 100));
 
-  if (!title) throw new Error("O título é obrigatório.");
+  const slug = await uniqueSlug(slugify(title));
+
+  let thumbnailUrl: string | null = null;
+  const image = formData.get("image");
+  if (image instanceof File && image.size > 0) {
+    thumbnailUrl = await uploadCoverImage(image, slug);
+  }
 
   const { data: course, error } = await supabase
     .from("courses")
     .insert({
       title,
-      slug: slugify(title),
+      slug,
       description,
+      language,
+      sales_country: salesCountry,
+      category,
       instructor_name: instructorName,
+      thumbnail_url: thumbnailUrl,
       price_cents: priceCents,
       status: "draft",
       created_by: user.id,
@@ -46,36 +96,64 @@ export async function createCourse(formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/courses");
-  redirect(`/admin/courses/${course.id}/edit`);
+  redirect(`/admin/courses/${course.id}/panel`);
 }
 
-export async function updateCourse(courseId: string, formData: FormData) {
+export async function updateCourseInfo(courseId: string, formData: FormData) {
   const supabase = await createClient();
 
   const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim() || null;
+  if (!title) throw new Error("O nome do produto é obrigatório.");
+
+  const description = String(formData.get("description") ?? "").trim().slice(0, 2000) || null;
+  const language = String(formData.get("language") ?? "").trim() || null;
+  const salesCountry = String(formData.get("sales_country") ?? "").trim() || null;
+  const category = String(formData.get("category") ?? "").trim() || null;
   const instructorName = String(formData.get("instructor_name") ?? "").trim() || null;
+
+  const updates: TablesUpdate<"courses"> = {
+    title,
+    description,
+    language,
+    sales_country: salesCountry,
+    category,
+    instructor_name: instructorName,
+    updated_at: new Date().toISOString(),
+  };
+
+  const image = formData.get("image");
+  if (image instanceof File && image.size > 0) {
+    const { data: course } = await supabase
+      .from("courses")
+      .select("slug")
+      .eq("id", courseId)
+      .single();
+    updates.thumbnail_url = await uploadCoverImage(image, course?.slug ?? courseId);
+  }
+
+  const { error } = await supabase.from("courses").update(updates).eq("id", courseId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
+  revalidatePath("/admin/courses");
+}
+
+export async function updateCoursePricing(courseId: string, formData: FormData) {
+  const supabase = await createClient();
+
   const priceReais = Number(formData.get("price") ?? 0);
   const priceCents = Math.max(0, Math.round(priceReais * 100));
 
-  if (!title) throw new Error("O título é obrigatório.");
-
   const { error } = await supabase
     .from("courses")
-    .update({
-      title,
-      description,
-      instructor_name: instructorName,
-      price_cents: priceCents,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ price_cents: priceCents, updated_at: new Date().toISOString() })
     .eq("id", courseId);
-
   if (error) throw new Error(error.message);
 
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
   revalidatePath("/admin/courses");
 }
+
 
 export async function togglePublish(courseId: string, nextStatus: "draft" | "published") {
   const supabase = await createClient();
@@ -87,7 +165,7 @@ export async function togglePublish(courseId: string, nextStatus: "draft" | "pub
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/courses");
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
 }
 
 export async function deleteCourse(courseId: string) {
@@ -118,7 +196,7 @@ export async function createModule(courseId: string, formData: FormData) {
     .insert({ course_id: courseId, title, position: nextPosition });
 
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
 }
 
 export async function updateModule(moduleId: string, courseId: string, formData: FormData) {
@@ -128,7 +206,7 @@ export async function updateModule(moduleId: string, courseId: string, formData:
 
   const { error } = await supabase.from("modules").update({ title }).eq("id", moduleId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
 }
 
 export async function updateModuleWithLessons(
@@ -162,14 +240,14 @@ export async function updateModuleWithLessons(
     if (lessonError) throw new Error(lessonError.message);
   }
 
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
 }
 
 export async function deleteModule(moduleId: string, courseId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("modules").delete().eq("id", moduleId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
 }
 
 export async function createLesson(moduleId: string, courseId: string, formData: FormData) {
@@ -198,7 +276,7 @@ export async function createLesson(moduleId: string, courseId: string, formData:
   });
 
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
 }
 
 export async function updateLesson(lessonId: string, courseId: string, formData: FormData) {
@@ -214,12 +292,12 @@ export async function updateLesson(lessonId: string, courseId: string, formData:
     .eq("id", lessonId);
 
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
 }
 
 export async function deleteLesson(lessonId: string, courseId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
 }

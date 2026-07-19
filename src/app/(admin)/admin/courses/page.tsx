@@ -51,7 +51,7 @@ export default async function AdminCoursesPage() {
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
                     <Link
-                      href={`/admin/courses/${course.id}/edit`}
+                      href={`/admin/courses/${course.id}/panel`}
                       className="text-primary hover:underline"
                     >
                       Editar

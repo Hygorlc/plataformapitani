@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { CheckCircle2, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { normalizeVideoUrl } from "@/lib/utils/embed";
 
 type YouTubePlayer = {
   destroy: () => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
   getPlayerState: () => number;
   getVolume: () => number;
   isMuted: () => boolean;
   mute: () => void;
   pauseVideo: () => void;
   playVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   setVolume: (volume: number) => void;
   unMute: () => void;
 };
@@ -64,6 +67,9 @@ export function VideoEmbed({ url, title }: { url: string; title: string }) {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(100);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
     if (!videoId) return;
@@ -87,9 +93,16 @@ export function VideoEmbed({ url, title }: { url: string; title: string }) {
           onReady: (event) => {
             setVolume(event.target.getVolume());
             setMuted(event.target.isMuted());
+            setDuration(event.target.getDuration());
             setReady(true);
           },
-          onStateChange: (event) => setPlaying(event.data === 1),
+          onStateChange: (event) => {
+            setPlaying(event.data === 1);
+            if (event.data === 0) {
+              setCurrentTime(event.target.getDuration());
+              setCompleted(true);
+            }
+          },
         },
       });
     };
@@ -116,6 +129,18 @@ export function VideoEmbed({ url, title }: { url: string; title: string }) {
       playerRef.current = null;
     };
   }, [playerElementId, videoId]);
+
+  useEffect(() => {
+    if (!playing) return;
+
+    const progressTimer = window.setInterval(() => {
+      if (!playerRef.current) return;
+      setCurrentTime(playerRef.current.getCurrentTime());
+      setDuration(playerRef.current.getDuration());
+    }, 500);
+
+    return () => window.clearInterval(progressTimer);
+  }, [playing]);
 
   if (!videoId) return <NativeVideoEmbed url={url} title={title} />;
 
@@ -144,6 +169,20 @@ export function VideoEmbed({ url, title }: { url: string; title: string }) {
     setMuted(nextVolume === 0);
   };
 
+  const seekVideo = (nextTime: number) => {
+    if (!playerRef.current || !ready) return;
+    playerRef.current.seekTo(nextTime, true);
+    setCurrentTime(nextTime);
+    if (nextTime < duration) setCompleted(false);
+  };
+
+  const formatTime = (seconds: number) => {
+    if (!Number.isFinite(seconds)) return "0:00";
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
   return (
     <div className="overflow-hidden rounded-xl bg-black" aria-label={`Player de vídeo: ${title}`}>
       <div className="relative aspect-video w-full overflow-hidden">
@@ -161,7 +200,7 @@ export function VideoEmbed({ url, title }: { url: string; title: string }) {
         )}
       </div>
 
-      <div className="flex h-14 items-center gap-4 border-t border-white/10 bg-neutral-950 px-4 text-white">
+      <div className="flex flex-wrap items-center gap-3 border-t border-white/10 bg-neutral-950 px-4 py-3 text-white">
         <button
           type="button"
           onClick={togglePlayback}
@@ -192,6 +231,33 @@ export function VideoEmbed({ url, title }: { url: string; title: string }) {
           aria-label="Volume"
           className="h-1 w-28 cursor-pointer accent-primary disabled:opacity-50"
         />
+
+        <span className="min-w-24 text-xs tabular-nums text-white/70">
+          {formatTime(currentTime)} / {formatTime(duration)}
+        </span>
+
+        <input
+          type="range"
+          min="0"
+          max={duration || 0}
+          step="0.1"
+          value={Math.min(currentTime, duration || 0)}
+          onChange={(event) => seekVideo(Number(event.target.value))}
+          disabled={!ready || duration === 0}
+          aria-label="Linha do tempo do vídeo"
+          className="h-1 min-w-40 flex-1 cursor-pointer accent-primary disabled:opacity-50"
+        />
+
+        {completed && (
+          <button
+            type="button"
+            aria-label="Vídeo concluído"
+            className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white"
+          >
+            <CheckCircle2 size={18} />
+            Concluído
+          </button>
+        )}
       </div>
     </div>
   );

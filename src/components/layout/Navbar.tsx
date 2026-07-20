@@ -8,7 +8,6 @@ import { LogoutButton } from "@/components/layout/LogoutButton";
 const navItems = [
   { label: "Início", href: "/catalog" },
   { label: "Meus Cursos", href: "/my-courses" },
-  { label: "Certificados", href: "/certificates" },
   { label: "Comunidade", href: "/community" },
   { label: "Suporte", href: "/support" },
 ];

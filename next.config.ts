@@ -14,6 +14,11 @@ const nextConfig: NextConfig = {
         hostname: "ynwhawcyhabjynrjfqtl.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "pablopitani.com.br",
+        pathname: "/wp-content/uploads/**",
+      },
     ],
   },
 };

@@ -26,11 +26,24 @@ export default async function CommunityPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data } = await supabase
-    .from("comments")
-    .select("id, body, created_at, lesson_id, courses(slug, title), lessons(title), profiles(full_name)")
-    .order("created_at", { ascending: false })
-    .limit(20);
+  const { data: enrollments } = await supabase
+    .from("enrollments")
+    .select("course_id")
+    .eq("user_id", user.id)
+    .eq("status", "active");
+
+  const enrolledCourseIds = [...new Set((enrollments ?? []).map((item) => item.course_id))];
+
+  const { data } = enrolledCourseIds.length
+    ? await supabase
+        .from("comments")
+        .select(
+          "id, body, created_at, lesson_id, courses(slug, title), lessons(title), profiles(full_name)"
+        )
+        .in("course_id", enrolledCourseIds)
+        .order("created_at", { ascending: false })
+        .limit(20)
+    : { data: [] };
 
   const feed = (data ?? []) as unknown as FeedRow[];
 

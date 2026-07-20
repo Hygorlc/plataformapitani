@@ -6,7 +6,6 @@ import {
   GraduationCap,
   LayoutGrid,
   BookOpen,
-  Award,
   Users,
   HelpCircle,
   LayoutDashboard,
@@ -25,7 +24,6 @@ export interface NavItem {
 export const memberNavItems: NavItem[] = [
   { label: "Catálogo", href: "/catalog", icon: LayoutGrid },
   { label: "Meus Cursos", href: "/my-courses", icon: BookOpen },
-  { label: "Certificados", href: "/certificates", icon: Award },
   { label: "Comunidade", href: "/community", icon: Users },
   { label: "Suporte", href: "/support", icon: HelpCircle },
 ];

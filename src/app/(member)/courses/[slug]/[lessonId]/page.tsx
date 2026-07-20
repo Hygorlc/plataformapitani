@@ -6,6 +6,7 @@ import {
   getCourseDetail,
   courseProgressPercent,
   getLessonNav,
+  isPitaniCourseId,
 } from "@/lib/data/courses";
 import { getLessonComments } from "@/lib/data/comments";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -35,7 +36,8 @@ export default async function LessonPlayerPage({
 
   const progressPercent = courseProgressPercent(course.modules);
   const lessonPath = `/courses/${slug}/${lessonId}`;
-  const comments = await getLessonComments(supabase, lessonId, user.id);
+  const isPitaniCourse = isPitaniCourseId(course.id);
+  const comments = isPitaniCourse ? [] : await getLessonComments(supabase, lessonId, user.id);
 
   return (
     <div className="px-6 py-8 lg:px-12">
@@ -52,12 +54,14 @@ export default async function LessonPlayerPage({
                 <p className="mt-1 text-sm text-text-secondary">{current.description}</p>
               )}
             </div>
-            <MarkCompleteButton
-              lessonId={current.id}
-              courseId={course.id}
-              courseSlug={slug}
-              completed={current.completed}
-            />
+            {!isPitaniCourse && (
+              <MarkCompleteButton
+                lessonId={current.id}
+                courseId={course.id}
+                courseSlug={slug}
+                completed={current.completed}
+              />
+            )}
           </div>
 
           <div className="mt-4 flex items-center gap-3">
@@ -73,15 +77,17 @@ export default async function LessonPlayerPage({
             </Link>
           </div>
 
-          <div className="mt-10 border-t border-border pt-6">
-            <CommentThread
-              comments={comments}
-              lessonId={lessonId}
-              courseId={course.id}
-              courseSlug={slug}
-              lessonPath={lessonPath}
-            />
-          </div>
+          {!isPitaniCourse && (
+            <div className="mt-10 border-t border-border pt-6">
+              <CommentThread
+                comments={comments}
+                lessonId={lessonId}
+                courseId={course.id}
+                courseSlug={slug}
+                lessonPath={lessonPath}
+              />
+            </div>
+          )}
         </div>
 
         <div>

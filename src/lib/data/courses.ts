@@ -19,6 +19,41 @@ export interface CatalogCourse {
   status: CourseStatus;
 }
 
+const PITANI_COURSES: CatalogCourse[] = [
+  {
+    id: "pitani-domine-sua-rotina",
+    title: "Treinamento Domine sua Rotina",
+    slug: "domine-sua-rotina",
+    description:
+      "Aprenda a organizar prioridades, criar uma rotina produtiva e avançar com consistência em direção aos seus objetivos.",
+    instructor_name: "Pablo Pitani",
+    thumbnail_url:
+      "https://pablopitani.com.br/wp-content/uploads/2026/04/Thumb-domine-sua-rotina-1.png",
+    price_cents: 0,
+    enrolled: true,
+    progressPercent: 0,
+    status: "new",
+  },
+  {
+    id: "pitani-neurovendas",
+    title: "Treinamento Neurovendas",
+    slug: "neurovendas",
+    description:
+      "Conheça princípios de comportamento e comunicação aplicados a vendas para criar conexões e apresentar valor com mais clareza.",
+    instructor_name: "Pablo Pitani",
+    thumbnail_url:
+      "https://pablopitani.com.br/wp-content/uploads/2026/04/Thumb-neurovendas-2.png",
+    price_cents: 0,
+    enrolled: true,
+    progressPercent: 0,
+    status: "new",
+  },
+];
+
+export function isPitaniCourseId(courseId: string): boolean {
+  return courseId.startsWith("pitani-");
+}
+
 const NEW_WINDOW_DAYS = 14;
 
 export async function getCatalogCourses(
@@ -55,7 +90,7 @@ export async function getCatalogCourses(
 
   const now = Date.now();
 
-  return (courses ?? []).map((course) => {
+  const databaseCourses = (courses ?? []).map((course) => {
     const enrolled = enrolledCourseIds.has(course.id);
     const total = lessonCountByCourse.get(course.id) ?? 0;
     const completed = completedCountByCourse.get(course.id) ?? 0;
@@ -82,6 +117,11 @@ export async function getCatalogCourses(
       status,
     };
   });
+
+  const databaseSlugs = new Set(databaseCourses.map((course) => course.slug));
+  const pitaniCourses = PITANI_COURSES.filter((course) => !databaseSlugs.has(course.slug));
+
+  return [...pitaniCourses, ...databaseCourses];
 }
 
 export interface CourseLesson {
@@ -117,6 +157,43 @@ export async function getCourseDetail(
   slug: string,
   userId: string
 ): Promise<CourseDetail | null> {
+  const pitaniCourse = PITANI_COURSES.find((course) => course.slug === slug);
+  if (pitaniCourse) {
+    const lessonId = `${pitaniCourse.id}-aula`;
+    const videoUrl =
+      slug === "domine-sua-rotina"
+        ? "https://www.youtube.com/watch?v=PDN85o-jvD8"
+        : "https://www.youtube.com/watch?v=9sRoTNfdEUk";
+
+    return {
+      id: pitaniCourse.id,
+      title: pitaniCourse.title,
+      slug: pitaniCourse.slug,
+      description: pitaniCourse.description,
+      instructor_name: pitaniCourse.instructor_name,
+      thumbnail_url: pitaniCourse.thumbnail_url,
+      price_cents: pitaniCourse.price_cents,
+      enrolled: true,
+      modules: [
+        {
+          id: `${pitaniCourse.id}-modulo`,
+          title: "Treinamento",
+          position: 1,
+          lessons: [
+            {
+              id: lessonId,
+              title: pitaniCourse.title,
+              description: pitaniCourse.description,
+              video_url: videoUrl,
+              position: 1,
+              completed: false,
+            },
+          ],
+        },
+      ],
+    };
+  }
+
   const { data: course } = await supabase
     .from("courses")
     .select("*")

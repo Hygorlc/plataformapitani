@@ -6,17 +6,17 @@ function getRemaining(endAt: string) {
   return Math.max(0, new Date(endAt).getTime() - Date.now());
 }
 
-export function PromotionCountdown({ endAt }: { endAt: string }) {
-  const [remaining, setRemaining] = useState(() => getRemaining(endAt));
+export function PromotionCountdown({ endAt }: { endAt?: string | null }) {
+  const [remaining, setRemaining] = useState(() => (endAt ? getRemaining(endAt) : 0));
 
   useEffect(() => {
+    if (!endAt) return;
+
     const update = () => setRemaining(getRemaining(endAt));
     update();
     const interval = window.setInterval(update, 1000);
     return () => window.clearInterval(interval);
   }, [endAt]);
-
-  if (remaining <= 0) return null;
 
   const totalSeconds = Math.floor(remaining / 1000);
   const days = Math.floor(totalSeconds / 86400);
@@ -30,9 +30,11 @@ export function PromotionCountdown({ endAt }: { endAt: string }) {
   return (
     <div className="rounded-md border border-primary/50 bg-background/95 px-3 py-2 text-center shadow-xl backdrop-blur-sm">
       <p className="text-xs font-semibold text-primary">Desconto exclusivo</p>
-      <p className="mt-0.5 whitespace-nowrap text-xs font-medium text-text-primary">
-        {days > 0 ? `${days}d ${clock}` : clock}
-      </p>
+      {endAt && remaining > 0 && (
+        <p className="mt-0.5 whitespace-nowrap text-xs font-medium text-text-primary">
+          {days > 0 ? `${days}d ${clock}` : clock}
+        </p>
+      )}
     </div>
   );
 }

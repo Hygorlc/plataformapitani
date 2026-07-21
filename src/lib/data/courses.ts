@@ -83,7 +83,11 @@ export async function getCatalogCourses(
         .select("course_id, completed")
         .eq("user_id", userId)
         .eq("completed", true),
-      supabase.from("profiles").select("student_since").eq("id", userId).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("student_since, role")
+        .eq("id", userId)
+        .maybeSingle(),
     ]);
 
   const enrolledCourseIds = new Set((enrollments ?? []).map((e) => e.course_id));
@@ -103,7 +107,11 @@ export async function getCatalogCourses(
     ? new Date(profile.student_since).getTime() + 7 * 24 * 60 * 60 * 1000
     : 0;
   const activePromotionEndsAt =
-    promotionEndTimestamp > now ? new Date(promotionEndTimestamp).toISOString() : null;
+    profile?.role === "admin"
+      ? new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString()
+      : promotionEndTimestamp > now
+        ? new Date(promotionEndTimestamp).toISOString()
+        : null;
 
   const databaseCourses = (courses ?? []).map((course) => {
     const enrolled = enrolledCourseIds.has(course.id);

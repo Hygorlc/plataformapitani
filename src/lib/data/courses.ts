@@ -17,6 +17,7 @@ export interface CatalogCourse {
   enrolled: boolean;
   progressPercent: number;
   status: CourseStatus;
+  promotionEndsAt: string | null;
 }
 
 const PITANI_COURSES: CatalogCourse[] = [
@@ -33,6 +34,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     enrolled: true,
     progressPercent: 0,
     status: "new",
+    promotionEndsAt: null,
   },
   {
     id: "pitani-neurovendas",
@@ -47,6 +49,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     enrolled: true,
     progressPercent: 0,
     status: "new",
+    promotionEndsAt: null,
   },
 ];
 
@@ -60,7 +63,13 @@ export async function getCatalogCourses(
   supabase: TypedClient,
   userId: string
 ): Promise<CatalogCourse[]> {
-  const [{ data: courses }, { data: lessons }, { data: enrollments }, { data: progress }] =
+  const [
+    { data: courses },
+    { data: lessons },
+    { data: enrollments },
+    { data: progress },
+    { data: profile },
+  ] =
     await Promise.all([
       supabase.from("courses").select("*").eq("status", "published"),
       supabase.from("lessons").select("id, course_id"),
@@ -74,6 +83,7 @@ export async function getCatalogCourses(
         .select("course_id, completed")
         .eq("user_id", userId)
         .eq("completed", true),
+      supabase.from("profiles").select("student_since").eq("id", userId).maybeSingle(),
     ]);
 
   const enrolledCourseIds = new Set((enrollments ?? []).map((e) => e.course_id));
@@ -89,6 +99,11 @@ export async function getCatalogCourses(
   });
 
   const now = Date.now();
+  const promotionEndTimestamp = profile?.student_since
+    ? new Date(profile.student_since).getTime() + 7 * 24 * 60 * 60 * 1000
+    : 0;
+  const activePromotionEndsAt =
+    promotionEndTimestamp > now ? new Date(promotionEndTimestamp).toISOString() : null;
 
   const databaseCourses = (courses ?? []).map((course) => {
     const enrolled = enrolledCourseIds.has(course.id);
@@ -115,6 +130,8 @@ export async function getCatalogCourses(
       enrolled,
       progressPercent,
       status,
+      promotionEndsAt:
+        !enrolled && course.price_cents > 0 ? activePromotionEndsAt : null,
     };
   });
 

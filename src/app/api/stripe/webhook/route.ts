@@ -44,6 +44,12 @@ export async function POST(req: Request) {
         },
         { onConflict: "user_id,course_id" }
       );
+
+      await admin
+        .from("profiles")
+        .update({ student_since: new Date().toISOString() })
+        .eq("id", userId)
+        .is("student_since", null);
     }
   }
 

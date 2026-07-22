@@ -85,16 +85,25 @@ export interface AdminUserRow {
   full_name: string | null;
   role: "student" | "admin";
   created_at: string;
+  enrolledCourseIds: string[];
 }
 
 export async function getAdminUsers(supabase: TypedClient): Promise<AdminUserRow[]> {
-  const [{ data: profiles }, admin] = await Promise.all([
+  const [{ data: profiles }, { data: enrollments }, admin] = await Promise.all([
     supabase.from("profiles").select("*"),
+    supabase.from("enrollments").select("user_id, course_id").eq("status", "active"),
     Promise.resolve(createAdminClient()),
   ]);
 
   const { data: authData } = await admin.auth.admin.listUsers({ perPage: 1000 });
   const emailById = new Map(authData?.users.map((u) => [u.id, u.email ?? ""]) ?? []);
+  const coursesByUser = new Map<string, string[]>();
+  (enrollments ?? []).forEach((enrollment) => {
+    coursesByUser.set(enrollment.user_id, [
+      ...(coursesByUser.get(enrollment.user_id) ?? []),
+      enrollment.course_id,
+    ]);
+  });
 
   return (profiles ?? [])
     .map((p) => ({
@@ -103,6 +112,7 @@ export async function getAdminUsers(supabase: TypedClient): Promise<AdminUserRow
       full_name: p.full_name,
       role: p.role,
       created_at: p.created_at,
+      enrolledCourseIds: coursesByUser.get(p.id) ?? [],
     }))
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }

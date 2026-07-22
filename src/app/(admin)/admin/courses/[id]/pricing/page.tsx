@@ -13,14 +13,21 @@ export default async function CoursePricingPage({
 
   const { data: courseWithPromotion, error: promotionError } = await supabase
     .from("courses")
-    .select("id, price_cents, promotion_enabled")
+    .select("id, price_cents, promotion_enabled, promotion_text, promotion_days")
     .eq("id", id)
     .single();
   const { data: legacyCourse } = promotionError
     ? await supabase.from("courses").select("id, price_cents").eq("id", id).single()
     : { data: null };
   const course = courseWithPromotion ??
-    (legacyCourse ? { ...legacyCourse, promotion_enabled: true } : null);
+    (legacyCourse
+      ? {
+          ...legacyCourse,
+          promotion_enabled: true,
+          promotion_text: "Condição especial",
+          promotion_days: 7,
+        }
+      : null);
   if (!course) notFound();
 
   const promotionControlAvailable = !promotionError;
@@ -75,13 +82,45 @@ export default async function CoursePricingPage({
             />
             <span>
               <span className="block text-sm font-medium text-text-primary">
-                Ativar contagem regressiva de 7 dias
+                Ativar contagem regressiva
               </span>
               <span className="mt-1 block text-xs text-text-muted">
                 Exibe o prazo e a condição especial neste curso para alunos que ainda não o possuem.
               </span>
             </span>
           </label>
+
+          <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_110px]">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="promotion_text" className="text-sm font-medium text-text-primary">
+                Texto da oferta
+              </label>
+              <input
+                id="promotion_text"
+                name="promotion_text"
+                type="text"
+                maxLength={60}
+                defaultValue={course.promotion_text}
+                disabled={!promotionControlAvailable}
+                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary disabled:opacity-50 focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="promotion_days" className="text-sm font-medium text-text-primary">
+                Dias
+              </label>
+              <input
+                id="promotion_days"
+                name="promotion_days"
+                type="number"
+                min="1"
+                max="365"
+                defaultValue={course.promotion_days}
+                disabled={!promotionControlAvailable}
+                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary disabled:opacity-50 focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
 
           {!promotionControlAvailable && (
             <p className="mt-2 text-xs text-text-muted">

@@ -144,12 +144,21 @@ export async function updateCoursePricing(courseId: string, formData: FormData) 
   const priceReais = Number(formData.get("price") ?? 0);
   const priceCents = Math.max(0, Math.round(priceReais * 100));
   const promotionEnabled = formData.get("promotion_enabled") === "on";
+  const promotionText =
+    String(formData.get("promotion_text") ?? "").trim().slice(0, 60) ||
+    "Condição especial";
+  const promotionDays = Math.min(
+    365,
+    Math.max(1, Math.round(Number(formData.get("promotion_days") ?? 7) || 7))
+  );
 
   const { error } = await supabase
     .from("courses")
     .update({
       price_cents: priceCents,
       promotion_enabled: promotionEnabled,
+      promotion_text: promotionText,
+      promotion_days: promotionDays,
       updated_at: new Date().toISOString(),
     })
     .eq("id", courseId);

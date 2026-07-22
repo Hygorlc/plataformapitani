@@ -9,7 +9,7 @@ function getRemaining(endAt: string) {
 export function PromotionCountdown() {
   return (
     <div className="rounded-md border border-primary/50 bg-background/95 px-3 py-2 text-center shadow-xl backdrop-blur-sm">
-      <p className="text-xs font-bold text-red-500">Desbloqueie com desconto</p>
+      <p className="text-xs font-bold text-red-500">Condição especial</p>
     </div>
   );
 }
@@ -36,7 +36,7 @@ export function PromotionTimer({ endAt }: { endAt: string }) {
     .join(":");
 
   return (
-    <div className="whitespace-nowrap rounded-md border border-red-500/60 bg-background/95 px-2.5 py-1 text-xs font-bold text-red-500 shadow-lg backdrop-blur-sm">
+    <div className="whitespace-nowrap rounded-md border border-red-500/60 bg-background/95 px-3 py-1.5 text-sm font-bold text-white shadow-lg backdrop-blur-sm">
       {days > 0 ? `${days}d ${clock}` : clock}
     </div>
   );

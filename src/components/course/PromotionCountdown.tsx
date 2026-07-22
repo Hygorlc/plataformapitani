@@ -6,17 +6,25 @@ function getRemaining(endAt: string) {
   return Math.max(0, new Date(endAt).getTime() - Date.now());
 }
 
-export function PromotionCountdown({ endAt }: { endAt?: string | null }) {
-  const [remaining, setRemaining] = useState(() => (endAt ? getRemaining(endAt) : 0));
+export function PromotionCountdown() {
+  return (
+    <div className="rounded-md border border-primary/50 bg-background/95 px-3 py-2 text-center shadow-xl backdrop-blur-sm">
+      <p className="text-xs font-bold text-red-500">Desbloqueie com desconto</p>
+    </div>
+  );
+}
+
+export function PromotionTimer({ endAt }: { endAt: string }) {
+  const [remaining, setRemaining] = useState(() => getRemaining(endAt));
 
   useEffect(() => {
-    if (!endAt) return;
-
     const update = () => setRemaining(getRemaining(endAt));
     update();
     const interval = window.setInterval(update, 1000);
     return () => window.clearInterval(interval);
   }, [endAt]);
+
+  if (remaining <= 0) return null;
 
   const totalSeconds = Math.floor(remaining / 1000);
   const days = Math.floor(totalSeconds / 86400);
@@ -28,13 +36,8 @@ export function PromotionCountdown({ endAt }: { endAt?: string | null }) {
     .join(":");
 
   return (
-    <div className="rounded-md border border-primary/50 bg-background/95 px-3 py-2 text-center shadow-xl backdrop-blur-sm">
-      <p className="text-xs font-bold text-red-500">Desbloqueie com desconto</p>
-      {endAt && remaining > 0 && (
-        <p className="mt-0.5 whitespace-nowrap text-xs font-medium text-text-primary">
-          {days > 0 ? `${days}d ${clock}` : clock}
-        </p>
-      )}
+    <div className="whitespace-nowrap rounded-md border border-red-500/60 bg-background/95 px-2.5 py-1 text-xs font-bold text-red-500 shadow-lg backdrop-blur-sm">
+      {days > 0 ? `${days}d ${clock}` : clock}
     </div>
   );
 }

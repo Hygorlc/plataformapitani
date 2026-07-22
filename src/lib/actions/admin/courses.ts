@@ -153,7 +153,15 @@ export async function updateCoursePricing(courseId: string, formData: FormData) 
       updated_at: new Date().toISOString(),
     })
     .eq("id", courseId);
-  if (error) throw new Error(error.message);
+  if (error?.code === "42703") {
+    const { error: legacyError } = await supabase
+      .from("courses")
+      .update({ price_cents: priceCents, updated_at: new Date().toISOString() })
+      .eq("id", courseId);
+    if (legacyError) throw new Error(legacyError.message);
+  } else if (error) {
+    throw new Error(error.message);
+  }
 
   revalidatePath(`/admin/courses/${courseId}`, "layout");
   revalidatePath("/admin/courses");

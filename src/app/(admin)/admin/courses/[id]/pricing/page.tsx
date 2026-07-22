@@ -11,12 +11,19 @@ export default async function CoursePricingPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: course } = await supabase
+  const { data: courseWithPromotion, error: promotionError } = await supabase
     .from("courses")
     .select("id, price_cents, promotion_enabled")
     .eq("id", id)
     .single();
+  const { data: legacyCourse } = promotionError
+    ? await supabase.from("courses").select("id, price_cents").eq("id", id).single()
+    : { data: null };
+  const course = courseWithPromotion ??
+    (legacyCourse ? { ...legacyCourse, promotion_enabled: true } : null);
   if (!course) notFound();
+
+  const promotionControlAvailable = !promotionError;
 
   const isFree = course.price_cents === 0;
 
@@ -63,6 +70,7 @@ export default async function CoursePricingPage({
               name="promotion_enabled"
               type="checkbox"
               defaultChecked={course.promotion_enabled}
+              disabled={!promotionControlAvailable}
               className="mt-0.5 h-4 w-4 accent-primary"
             />
             <span>
@@ -74,6 +82,12 @@ export default async function CoursePricingPage({
               </span>
             </span>
           </label>
+
+          {!promotionControlAvailable && (
+            <p className="mt-2 text-xs text-text-muted">
+              A contagem permanece ativa. O botão ficará disponível assim que a atualização do banco for concluída.
+            </p>
+          )}
 
           <Button type="submit" className="mt-5 w-fit">
             Salvar

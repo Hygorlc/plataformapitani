@@ -165,7 +165,9 @@ export type Database = {
           instructor_name: string | null
           language: string | null
           price_cents: number
+          promotion_days: number
           promotion_enabled: boolean
+          promotion_text: string
           sales_country: string | null
           slug: string
           status: string
@@ -183,7 +185,9 @@ export type Database = {
           instructor_name?: string | null
           language?: string | null
           price_cents?: number
+          promotion_days?: number
           promotion_enabled?: boolean
+          promotion_text?: string
           sales_country?: string | null
           slug: string
           status?: string
@@ -201,7 +205,9 @@ export type Database = {
           instructor_name?: string | null
           language?: string | null
           price_cents?: number
+          promotion_days?: number
           promotion_enabled?: boolean
+          promotion_text?: string
           sales_country?: string | null
           slug?: string
           status?: string

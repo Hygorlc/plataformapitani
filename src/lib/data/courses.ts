@@ -18,6 +18,7 @@ export interface CatalogCourse {
   progressPercent: number;
   status: CourseStatus;
   promotionEndsAt: string | null;
+  promotionLabel: string;
 }
 
 const PITANI_COURSES: CatalogCourse[] = [
@@ -35,6 +36,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     progressPercent: 0,
     status: "new",
     promotionEndsAt: null,
+    promotionLabel: "Condição especial",
   },
   {
     id: "pitani-neurovendas",
@@ -50,6 +52,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     progressPercent: 0,
     status: "new",
     promotionEndsAt: null,
+    promotionLabel: "Condição especial",
   },
 ];
 
@@ -103,17 +106,18 @@ export async function getCatalogCourses(
   });
 
   const now = Date.now();
-  const promotionEndTimestamp = profile?.promotion_started_at
-    ? new Date(profile.promotion_started_at).getTime() + 7 * 24 * 60 * 60 * 1000
-    : 0;
-  const activePromotionEndsAt =
-    promotionEndTimestamp > now ? new Date(promotionEndTimestamp).toISOString() : null;
-
   const databaseCourses = (courses ?? []).map((course) => {
     const enrolled = enrolledCourseIds.has(course.id);
     const total = lessonCountByCourse.get(course.id) ?? 0;
     const completed = completedCountByCourse.get(course.id) ?? 0;
     const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const promotionDays = course.promotion_days ?? 7;
+    const promotionEndTimestamp = profile?.promotion_started_at
+      ? new Date(profile.promotion_started_at).getTime() +
+        promotionDays * 24 * 60 * 60 * 1000
+      : 0;
+    const activePromotionEndsAt =
+      promotionEndTimestamp > now ? new Date(promotionEndTimestamp).toISOString() : null;
 
     let status: CourseStatus;
     if (enrolled) {
@@ -138,6 +142,7 @@ export async function getCatalogCourses(
         !enrolled && course.price_cents > 0 && course.promotion_enabled
           ? activePromotionEndsAt
           : null,
+      promotionLabel: course.promotion_text ?? "Condição especial",
     };
   });
 

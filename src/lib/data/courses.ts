@@ -85,7 +85,7 @@ export async function getCatalogCourses(
         .eq("completed", true),
       supabase
         .from("profiles")
-        .select("student_since, role")
+        .select("promotion_started_at")
         .eq("id", userId)
         .maybeSingle(),
     ]);
@@ -103,15 +103,11 @@ export async function getCatalogCourses(
   });
 
   const now = Date.now();
-  const promotionEndTimestamp = profile?.student_since
-    ? new Date(profile.student_since).getTime() + 7 * 24 * 60 * 60 * 1000
+  const promotionEndTimestamp = profile?.promotion_started_at
+    ? new Date(profile.promotion_started_at).getTime() + 7 * 24 * 60 * 60 * 1000
     : 0;
   const activePromotionEndsAt =
-    profile?.role === "admin"
-      ? new Date(now + 7 * 24 * 60 * 60 * 1000).toISOString()
-      : promotionEndTimestamp > now
-        ? new Date(promotionEndTimestamp).toISOString()
-        : null;
+    promotionEndTimestamp > now ? new Date(promotionEndTimestamp).toISOString() : null;
 
   const databaseCourses = (courses ?? []).map((course) => {
     const enrolled = enrolledCourseIds.has(course.id);

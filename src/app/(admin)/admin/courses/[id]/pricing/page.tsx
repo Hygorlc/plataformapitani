@@ -13,7 +13,7 @@ export default async function CoursePricingPage({
 
   const { data: course } = await supabase
     .from("courses")
-    .select("id, price_cents")
+    .select("id, price_cents, promotion_enabled")
     .eq("id", id)
     .single();
   if (!course) notFound();
@@ -57,6 +57,23 @@ export default async function CoursePricingPage({
                 : "Curso pago — o aluno é levado ao checkout do Stripe para concluir a compra."}
             </p>
           </div>
+
+          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background p-4">
+            <input
+              name="promotion_enabled"
+              type="checkbox"
+              defaultChecked={course.promotion_enabled}
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span>
+              <span className="block text-sm font-medium text-text-primary">
+                Ativar contagem regressiva de 7 dias
+              </span>
+              <span className="mt-1 block text-xs text-text-muted">
+                Exibe o prazo e a condição especial neste curso para alunos que ainda não o possuem.
+              </span>
+            </span>
+          </label>
 
           <Button type="submit" className="mt-5 w-fit">
             Salvar

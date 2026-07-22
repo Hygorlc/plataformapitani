@@ -143,10 +143,15 @@ export async function updateCoursePricing(courseId: string, formData: FormData) 
 
   const priceReais = Number(formData.get("price") ?? 0);
   const priceCents = Math.max(0, Math.round(priceReais * 100));
+  const promotionEnabled = formData.get("promotion_enabled") === "on";
 
   const { error } = await supabase
     .from("courses")
-    .update({ price_cents: priceCents, updated_at: new Date().toISOString() })
+    .update({
+      price_cents: priceCents,
+      promotion_enabled: promotionEnabled,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", courseId);
   if (error) throw new Error(error.message);
 

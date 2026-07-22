@@ -135,7 +135,9 @@ export async function getCatalogCourses(
       progressPercent,
       status,
       promotionEndsAt:
-        !enrolled && course.price_cents > 0 ? activePromotionEndsAt : null,
+        !enrolled && course.price_cents > 0 && course.promotion_enabled
+          ? activePromotionEndsAt
+          : null,
     };
   });
 

@@ -61,7 +61,7 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
                 </div>
               )}
               <div className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-48 -translate-x-1/2">
-                <PromotionCountdown />
+                <PromotionCountdown label={course.promotionLabel} />
               </div>
             </div>
           </div>

@@ -6,10 +6,10 @@ function getRemaining(endAt: string) {
   return Math.max(0, new Date(endAt).getTime() - Date.now());
 }
 
-export function PromotionCountdown() {
+export function PromotionCountdown({ label }: { label: string }) {
   return (
     <div className="rounded-md border border-primary/50 bg-background/95 px-3 py-2 text-center shadow-xl backdrop-blur-sm">
-      <p className="text-xs font-bold text-red-500">Condição especial</p>
+      <p className="text-xs font-bold text-red-500">{label}</p>
     </div>
   );
 }

@@ -2,7 +2,10 @@ import Link from "next/link";
 import { Play, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { CourseCover } from "@/components/course/CourseCover";
-import { PromotionCountdown } from "@/components/course/PromotionCountdown";
+import {
+  PromotionCountdown,
+  PromotionTimer,
+} from "@/components/course/PromotionCountdown";
 import type { CatalogCourse } from "@/lib/data/courses";
 
 const statusLabel: Record<CatalogCourse["status"], string> = {
@@ -52,8 +55,13 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
           <div className="absolute inset-0 flex items-center justify-center bg-black/55 backdrop-blur-[1px] transition-colors duration-200 group-hover/card:bg-black/70">
             <div className="group/lock relative flex h-12 w-12 items-center justify-center rounded-full bg-background/70 ring-2 ring-primary/70">
               <Lock size={22} className="text-primary" />
+              {course.promotionEndsAt && (
+                <div className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2">
+                  <PromotionTimer endAt={course.promotionEndsAt} />
+                </div>
+              )}
               <div className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden w-48 -translate-x-1/2 group-hover/lock:block">
-                <PromotionCountdown endAt={course.promotionEndsAt} />
+                <PromotionCountdown />
               </div>
             </div>
           </div>

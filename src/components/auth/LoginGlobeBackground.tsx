@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const GOLD = [150 / 255, 102 / 255, 7 / 255] as const;
 const WHITE = [1, 1, 1] as const;
@@ -265,6 +265,24 @@ function createShader(
 
 export function LoginGlobeBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const headline = "Conhecimento que transforma decisões em crescimento.";
+  const [typedHeadline, setTypedHeadline] = useState("");
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const reveal = window.setTimeout(() => setTypedHeadline(headline), 0);
+      return () => window.clearTimeout(reveal);
+    }
+
+    let character = 0;
+    const timer = window.setInterval(() => {
+      character += 1;
+      setTypedHeadline(headline.slice(0, character));
+      if (character >= headline.length) window.clearInterval(timer);
+    }, 70);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -422,8 +440,17 @@ export function LoginGlobeBackground() {
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-[#d7b648]">
           Evolua. Lidere. Cresça.
         </p>
-        <h2 className="text-3xl font-semibold leading-[1.12] tracking-tight text-white">
-          Conhecimento que transforma decisões em crescimento.
+        <h2
+          className="min-h-[102px] text-3xl font-semibold leading-[1.12] tracking-tight text-white"
+          aria-label={headline}
+        >
+          <span aria-hidden="true">{typedHeadline}</span>
+          <span
+            className="ml-1 inline-block animate-pulse text-[#d7b648]"
+            aria-hidden="true"
+          >
+            _
+          </span>
         </h2>
         <p className="mt-5 text-sm leading-6 text-white/60">
           Uma plataforma criada para empresários que querem liderar com estratégia,

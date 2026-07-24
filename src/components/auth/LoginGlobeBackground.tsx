@@ -430,7 +430,7 @@ export function LoginGlobeBackground() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <canvas ref={canvasRef} className="h-full w-full" aria-hidden="true" />
-      <div className="absolute right-[3.5%] top-1/2 hidden w-[260px] -translate-y-1/2 xl:block 2xl:w-[300px]">
+      <div className="absolute right-[3.5%] top-1/2 hidden w-[260px] -translate-y-1/2 xl:block 2xl:right-[12%] 2xl:w-[300px]">
         <div className="mb-5 h-px w-14 bg-[#966607]" />
         <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-[#d7b648]">
           Evolua. Lidere. Cresça.

@@ -269,11 +269,6 @@ export function LoginGlobeBackground() {
   const [typedHeadline, setTypedHeadline] = useState("");
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const reveal = window.setTimeout(() => setTypedHeadline(headline), 0);
-      return () => window.clearTimeout(reveal);
-    }
-
     let character = 0;
     const timer = window.setInterval(() => {
       character += 1;

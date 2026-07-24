@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthCard } from "@/components/auth/AuthCard";
+import { LoginGlobeBackground } from "@/components/auth/LoginGlobeBackground";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export default function LoginPage() {
@@ -8,6 +9,7 @@ export default function LoginPage() {
     <AuthCard
       title="Entrar"
       subtitle="Acesse sua área de membro."
+      background={<LoginGlobeBackground />}
       footer={
         <>
           Ainda não tem conta?{" "}

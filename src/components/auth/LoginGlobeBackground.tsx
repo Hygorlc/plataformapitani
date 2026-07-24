@@ -168,10 +168,10 @@ function createDetailedEarthGeometry(data: GeoJsonFeatureCollection) {
 
   const pixels = context.getImageData(0, 0, mapWidth, mapHeight).data;
   const dots: number[] = [];
-  for (let latitude = -88; latitude <= 88; latitude += 2.25) {
+  for (let latitude = -88; latitude <= 88; latitude += 1.5) {
     const circumference = Math.max(
       20,
-      Math.round(Math.cos((latitude * Math.PI) / 180) * 174)
+      Math.round(Math.cos((latitude * Math.PI) / 180) * 240)
     );
     for (let index = 0; index < circumference; index++) {
       const longitude = (index / circumference) * 360 - 180;
@@ -372,8 +372,9 @@ export function LoginGlobeBackground() {
       gl.bindBuffer(gl.ARRAY_BUFFER, gridBuffer);
       gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
       gl.uniform3f(uniforms.color, GRID[0], GRID[1], GRID[2]);
+      gl.lineWidth(1.5);
       gl.uniform1f(uniforms.pointSize, 1);
-      gl.uniform1f(uniforms.opacity, 0.68);
+      gl.uniform1f(uniforms.opacity, 1);
       gl.uniform1f(uniforms.roundPoints, 0);
       gl.drawArrays(gl.LINES, 0, GLOBE.grid.length / 3);
 

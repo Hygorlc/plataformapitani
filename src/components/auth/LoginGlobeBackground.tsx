@@ -373,7 +373,7 @@ export function LoginGlobeBackground() {
       gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
       gl.uniform3f(uniforms.color, GRID[0], GRID[1], GRID[2]);
       gl.uniform1f(uniforms.pointSize, 1);
-      gl.uniform1f(uniforms.opacity, 0.17);
+      gl.uniform1f(uniforms.opacity, 0.68);
       gl.uniform1f(uniforms.roundPoints, 0);
       gl.drawArrays(gl.LINES, 0, GLOBE.grid.length / 3);
 
@@ -415,9 +415,7 @@ export function LoginGlobeBackground() {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      <canvas ref={canvasRef} className="h-full w-full opacity-95" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_52%,rgba(150,102,7,0.15),transparent_44%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(8,8,10,0.12)_44%,rgba(8,8,10,0.9)_73%,var(--background)_100%)]" />
+      <canvas ref={canvasRef} className="h-full w-full" />
     </div>
   );
 }

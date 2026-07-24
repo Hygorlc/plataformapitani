@@ -17,6 +17,15 @@ const CONTINENTS = [
   [[112, -12], [132, -10], [154, -24], [146, -40], [121, -35], [112, -12]],
 ] as const;
 
+type GeoJsonGeometry = {
+  type: "Polygon" | "MultiPolygon";
+  coordinates: number[][][] | number[][][][];
+};
+
+type GeoJsonFeatureCollection = {
+  features: Array<{ geometry: GeoJsonGeometry | null }>;
+};
+
 function spherePoint(latitude: number, longitude: number, radius = 1) {
   const lat = (latitude * Math.PI) / 180;
   const lng = (longitude * Math.PI) / 180;
@@ -111,6 +120,80 @@ function createGlobeGeometry() {
 }
 
 const GLOBE = createGlobeGeometry();
+
+function createDetailedEarthGeometry(data: GeoJsonFeatureCollection) {
+  const mapWidth = 2048;
+  const mapHeight = 1024;
+  const mask = document.createElement("canvas");
+  mask.width = mapWidth;
+  mask.height = mapHeight;
+  const context = mask.getContext("2d", { willReadFrequently: true });
+  if (!context) return null;
+
+  const coastlines: number[] = [];
+  const drawRing = (ring: number[][]) => {
+    if (ring.length < 2) return;
+    context.beginPath();
+    ring.forEach(([longitude, latitude], index) => {
+      const x = ((longitude + 180) / 360) * mapWidth;
+      const y = ((90 - latitude) / 180) * mapHeight;
+      if (index === 0) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    });
+    context.closePath();
+    context.fill();
+
+    for (let index = 2; index < ring.length; index += 2) {
+      const [previousLongitude, previousLatitude] = ring[index - 2];
+      const [longitude, latitude] = ring[index];
+      if (Math.abs(longitude - previousLongitude) > 120) continue;
+      coastlines.push(
+        ...spherePoint(previousLatitude, previousLongitude, 1.018),
+        ...spherePoint(latitude, longitude, 1.018)
+      );
+    }
+  };
+
+  context.fillStyle = "#fff";
+  data.features.forEach(({ geometry }) => {
+    if (!geometry) return;
+    if (geometry.type === "Polygon") {
+      (geometry.coordinates as number[][][]).forEach(drawRing);
+    } else {
+      (geometry.coordinates as number[][][][]).forEach((polygon) =>
+        polygon.forEach(drawRing)
+      );
+    }
+  });
+
+  const pixels = context.getImageData(0, 0, mapWidth, mapHeight).data;
+  const dots: number[] = [];
+  for (let latitude = -88; latitude <= 88; latitude += 2.25) {
+    const circumference = Math.max(
+      20,
+      Math.round(Math.cos((latitude * Math.PI) / 180) * 174)
+    );
+    for (let index = 0; index < circumference; index++) {
+      const longitude = (index / circumference) * 360 - 180;
+      const x = Math.min(
+        mapWidth - 1,
+        Math.max(0, Math.round(((longitude + 180) / 360) * mapWidth))
+      );
+      const y = Math.min(
+        mapHeight - 1,
+        Math.max(0, Math.round(((90 - latitude) / 180) * mapHeight))
+      );
+      if (pixels[(y * mapWidth + x) * 4] > 128) {
+        dots.push(...spherePoint(latitude, longitude, 1.012));
+      }
+    }
+  }
+
+  return {
+    dots: new Float32Array(dots),
+    coastlines: new Float32Array(coastlines),
+  };
+}
 
 const VERTEX_SHADER = `
   attribute vec3 aPosition;
@@ -221,12 +304,38 @@ export function LoginGlobeBackground() {
     const coastlineBuffer = gl.createBuffer();
     if (!dotBuffer || !gridBuffer || !coastlineBuffer) return;
 
+    let dotCount = GLOBE.dots.length / 3;
+    let coastlineCount = GLOBE.coastlines.length / 3;
+
     gl.bindBuffer(gl.ARRAY_BUFFER, dotBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, GLOBE.dots, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, GLOBE.dots, gl.DYNAMIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, gridBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, GLOBE.grid, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, coastlineBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, GLOBE.coastlines, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, GLOBE.coastlines, gl.DYNAMIC_DRAW);
+
+    let cancelled = false;
+    void fetch(
+      "https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs/heads/master/50m/physical/ne_50m_land.json"
+    )
+      .then((response) => {
+        if (!response.ok) throw new Error("Unable to load Earth map");
+        return response.json() as Promise<GeoJsonFeatureCollection>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const detailed = createDetailedEarthGeometry(data);
+        if (!detailed) return;
+        gl.bindBuffer(gl.ARRAY_BUFFER, dotBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, detailed.dots, gl.DYNAMIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, coastlineBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, detailed.coastlines, gl.DYNAMIC_DRAW);
+        dotCount = detailed.dots.length / 3;
+        coastlineCount = detailed.coastlines.length / 3;
+      })
+      .catch(() => {
+        // The bundled simplified geometry remains visible as an offline fallback.
+      });
 
     let frame = 0;
     let width = 1;
@@ -272,15 +381,15 @@ export function LoginGlobeBackground() {
       gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
       gl.uniform3f(uniforms.color, GOLD[0], GOLD[1], GOLD[2]);
       gl.uniform1f(uniforms.opacity, 0.95);
-      gl.drawArrays(gl.LINES, 0, GLOBE.coastlines.length / 3);
+      gl.drawArrays(gl.LINES, 0, coastlineCount);
 
       gl.bindBuffer(gl.ARRAY_BUFFER, dotBuffer);
       gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
       gl.uniform3f(uniforms.color, WHITE[0], WHITE[1], WHITE[2]);
-      gl.uniform1f(uniforms.pointSize, Math.min(window.devicePixelRatio || 1, 2) * 2.1);
-      gl.uniform1f(uniforms.opacity, 0.82);
+      gl.uniform1f(uniforms.pointSize, Math.min(window.devicePixelRatio || 1, 2) * 2.35);
+      gl.uniform1f(uniforms.opacity, 0.94);
       gl.uniform1f(uniforms.roundPoints, 1);
-      gl.drawArrays(gl.POINTS, 0, GLOBE.dots.length / 3);
+      gl.drawArrays(gl.POINTS, 0, dotCount);
 
       rotationY -= 0.0022;
       frame = window.requestAnimationFrame(draw);
@@ -292,6 +401,7 @@ export function LoginGlobeBackground() {
     draw();
 
     return () => {
+      cancelled = true;
       observer.disconnect();
       window.cancelAnimationFrame(frame);
       gl.deleteBuffer(dotBuffer);

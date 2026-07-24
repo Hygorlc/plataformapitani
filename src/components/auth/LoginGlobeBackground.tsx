@@ -3,6 +3,19 @@
 import { useEffect, useRef } from "react";
 
 const GOLD = [150 / 255, 102 / 255, 7 / 255] as const;
+const WHITE = [1, 1, 1] as const;
+const GRID = [212 / 255, 212 / 255, 212 / 255] as const;
+
+// Simplified Natural Earth coastlines. Keeping them in the bundle makes the
+// globe appear immediately, without waiting for an external map request.
+const CONTINENTS = [
+  [[-168, 68], [-140, 70], [-125, 52], [-112, 49], [-96, 30], [-82, 25], [-80, 10], [-92, 15], [-106, 25], [-118, 32], [-130, 48], [-150, 58], [-168, 68]],
+  [[-82, 12], [-70, 8], [-50, 2], [-35, -8], [-44, -24], [-55, -38], [-68, -55], [-76, -35], [-80, -10], [-82, 12]],
+  [[-74, 60], [-48, 82], [-20, 76], [-28, 60], [-48, 58], [-74, 60]],
+  [[-18, 35], [2, 43], [26, 37], [35, 30], [52, 12], [44, -12], [31, -34], [18, -35], [5, -20], [-5, 4], [-18, 15], [-18, 35]],
+  [[-10, 36], [5, 58], [28, 72], [58, 70], [92, 78], [142, 66], [178, 55], [160, 42], [126, 38], [110, 20], [102, 5], [78, 8], [58, 25], [42, 30], [28, 42], [10, 44], [-10, 36]],
+  [[112, -12], [132, -10], [154, -24], [146, -40], [121, -35], [112, -12]],
+] as const;
 
 function spherePoint(latitude: number, longitude: number, radius = 1) {
   const lat = (latitude * Math.PI) / 180;
@@ -14,26 +27,35 @@ function spherePoint(latitude: number, longitude: number, radius = 1) {
   ];
 }
 
+function pointInPolygon(longitude: number, latitude: number, polygon: readonly (readonly number[])[]) {
+  let inside = false;
+  for (let current = 0, previous = polygon.length - 1; current < polygon.length; previous = current++) {
+    const [x1, y1] = polygon[current];
+    const [x2, y2] = polygon[previous];
+    const crosses =
+      y1 > latitude !== y2 > latitude &&
+      longitude < ((x2 - x1) * (latitude - y1)) / (y2 - y1) + x1;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
 function createGlobeGeometry() {
   const dots: number[] = [];
   const grid: number[] = [];
+  const coastlines: number[] = [];
 
-  // The same dotted-land approach used by the supplied Originkit globe,
-  // represented as real points on a WebGL sphere.
-  for (let latitude = -82; latitude <= 82; latitude += 4) {
+  for (let latitude = -82; latitude <= 82; latitude += 3.2) {
     const circumference = Math.max(
       12,
-      Math.round(Math.cos((latitude * Math.PI) / 180) * 96)
+      Math.round(Math.cos((latitude * Math.PI) / 180) * 120)
     );
 
     for (let index = 0; index < circumference; index++) {
       const longitude = (index / circumference) * 360 - 180;
-      const land =
-        Math.sin(longitude * 0.083 + latitude * 0.12) +
-        Math.cos(longitude * 0.047 - latitude * 0.18) +
-        Math.sin(longitude * 0.019 + latitude * 0.31);
-
-      if (land > -0.42) dots.push(...spherePoint(latitude, longitude, 1.012));
+      if (CONTINENTS.some((polygon) => pointInPolygon(longitude, latitude, polygon))) {
+        dots.push(...spherePoint(latitude, longitude, 1.012));
+      }
     }
   }
 
@@ -59,9 +81,32 @@ function createGlobeGeometry() {
     );
   }
 
+  CONTINENTS.forEach((continent) => {
+    for (let index = 1; index < continent.length; index++) {
+      const [previousLongitude, previousLatitude] = continent[index - 1];
+      const [longitude, latitude] = continent[index];
+      const steps = Math.max(
+        2,
+        Math.ceil(Math.hypot(longitude - previousLongitude, latitude - previousLatitude) / 3)
+      );
+      let previous = spherePoint(previousLatitude, previousLongitude, 1.018);
+      for (let step = 1; step <= steps; step++) {
+        const progress = step / steps;
+        const current = spherePoint(
+          previousLatitude + (latitude - previousLatitude) * progress,
+          previousLongitude + (longitude - previousLongitude) * progress,
+          1.018
+        );
+        coastlines.push(...previous, ...current);
+        previous = current;
+      }
+    }
+  });
+
   return {
     dots: new Float32Array(dots),
     grid: new Float32Array(grid),
+    coastlines: new Float32Array(coastlines),
   };
 }
 
@@ -173,19 +218,21 @@ export function LoginGlobeBackground() {
 
     const dotBuffer = gl.createBuffer();
     const gridBuffer = gl.createBuffer();
-    if (!dotBuffer || !gridBuffer) return;
+    const coastlineBuffer = gl.createBuffer();
+    if (!dotBuffer || !gridBuffer || !coastlineBuffer) return;
 
     gl.bindBuffer(gl.ARRAY_BUFFER, dotBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, GLOBE.dots, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, gridBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, GLOBE.grid, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, coastlineBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, GLOBE.coastlines, gl.STATIC_DRAW);
 
     let frame = 0;
     let width = 1;
     let height = 1;
     let rotationY = -0.42;
     const rotationX = 0.24;
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
@@ -206,29 +253,36 @@ export function LoginGlobeBackground() {
       gl.useProgram(program);
 
       const aspect = width / height;
-      const offset = aspect < 0.7 ? -0.47 : -0.48;
+      const offset = aspect < 0.7 ? -0.32 : -0.42;
       gl.uniform1f(uniforms.rotationX, rotationX);
       gl.uniform1f(uniforms.rotationY, rotationY);
       gl.uniform1f(uniforms.aspect, aspect);
       gl.uniform1f(uniforms.offset, offset);
-      gl.uniform3f(uniforms.color, GOLD[0], GOLD[1], GOLD[2]);
       gl.enableVertexAttribArray(position);
 
       gl.bindBuffer(gl.ARRAY_BUFFER, gridBuffer);
       gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
+      gl.uniform3f(uniforms.color, GRID[0], GRID[1], GRID[2]);
       gl.uniform1f(uniforms.pointSize, 1);
-      gl.uniform1f(uniforms.opacity, 0.2);
+      gl.uniform1f(uniforms.opacity, 0.17);
       gl.uniform1f(uniforms.roundPoints, 0);
       gl.drawArrays(gl.LINES, 0, GLOBE.grid.length / 3);
 
+      gl.bindBuffer(gl.ARRAY_BUFFER, coastlineBuffer);
+      gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
+      gl.uniform3f(uniforms.color, GOLD[0], GOLD[1], GOLD[2]);
+      gl.uniform1f(uniforms.opacity, 0.95);
+      gl.drawArrays(gl.LINES, 0, GLOBE.coastlines.length / 3);
+
       gl.bindBuffer(gl.ARRAY_BUFFER, dotBuffer);
       gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
+      gl.uniform3f(uniforms.color, WHITE[0], WHITE[1], WHITE[2]);
       gl.uniform1f(uniforms.pointSize, Math.min(window.devicePixelRatio || 1, 2) * 2.1);
-      gl.uniform1f(uniforms.opacity, 0.76);
+      gl.uniform1f(uniforms.opacity, 0.82);
       gl.uniform1f(uniforms.roundPoints, 1);
       gl.drawArrays(gl.POINTS, 0, GLOBE.dots.length / 3);
 
-      if (!reducedMotion) rotationY += 0.0018;
+      rotationY -= 0.0022;
       frame = window.requestAnimationFrame(draw);
     };
 
@@ -242,6 +296,7 @@ export function LoginGlobeBackground() {
       window.cancelAnimationFrame(frame);
       gl.deleteBuffer(dotBuffer);
       gl.deleteBuffer(gridBuffer);
+      gl.deleteBuffer(coastlineBuffer);
       gl.deleteProgram(program);
       gl.deleteShader(vertexShader);
       gl.deleteShader(fragmentShader);

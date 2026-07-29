@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCatalogCourses } from "@/lib/data/courses";
-import { HeroCarousel } from "@/components/course/HeroCarousel";
+import { HeroVideo } from "@/components/course/HeroCarousel";
 import { CourseRow } from "@/components/course/CourseRow";
 
 export default async function CatalogPage() {
@@ -17,18 +17,9 @@ export default async function CatalogPage() {
   const newCourses = courses.filter((c) => c.status === "new");
   const completed = courses.filter((c) => c.status === "completed");
 
-  const featuredIds = new Set<string>();
-  const featured = [...inProgress, ...newCourses, ...courses]
-    .filter((c) => {
-      if (featuredIds.has(c.id)) return false;
-      featuredIds.add(c.id);
-      return true;
-    })
-    .slice(0, 5);
-
   return (
     <div>
-      <HeroCarousel courses={featured} />
+      <HeroVideo />
 
       <div className="flex flex-col gap-10 py-8">
         <CourseRow title="Continuar Aprendendo" courses={inProgress} />

@@ -58,3 +58,17 @@ body {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes hero-video-reveal {
+  0%,
+  78% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.hero-video-reveal {
+  animation: hero-video-reveal 3.2s ease-out both;
+}

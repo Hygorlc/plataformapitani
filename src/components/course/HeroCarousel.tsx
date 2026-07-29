@@ -4,12 +4,12 @@ export function HeroVideo() {
   return (
     <div className="relative aspect-video w-full overflow-hidden bg-black md:aspect-[21/9]">
       <iframe
-        className="absolute left-1/2 top-1/2 aspect-video h-auto w-full -translate-x-1/2 -translate-y-1/2"
-        src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${VIDEO_ID}&controls=0&rel=0&modestbranding=1&playsinline=1`}
+        className="pointer-events-none absolute left-1/2 top-1/2 aspect-video h-auto w-full -translate-x-1/2 -translate-y-1/2"
+        src={`https://www.youtube-nocookie.com/embed/${VIDEO_ID}?autoplay=1&mute=1&loop=1&playlist=${VIDEO_ID}&controls=0&disablekb=1&fs=0&iv_load_policy=3&rel=0&modestbranding=1&playsinline=1`}
         title="Vídeo em destaque"
-        allow="autoplay; encrypted-media; picture-in-picture"
+        allow="autoplay; encrypted-media"
         referrerPolicy="strict-origin-when-cross-origin"
-        allowFullScreen
+        tabIndex={-1}
       />
     </div>
   );

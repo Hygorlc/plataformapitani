@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { Users, Library, DollarSign, Plus } from "lucide-react";
+import { Users, Library, DollarSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getDashboardStats, getAdminCourses } from "@/lib/data/admin";
 import { StatCard } from "@/components/admin/StatCard";
 import { PublishToggle } from "@/components/admin/PublishToggle";
-import { Button } from "@/components/ui/Button";
 
 function formatBRL(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -48,15 +47,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className="mt-8 rounded-xl border border-border bg-surface">
-        <div className="flex items-center justify-between p-5">
-          <Link href="/admin/courses/new">
-            <Button>
-              <Plus size={16} /> Adicionar Novo Curso
-            </Button>
-          </Link>
-        </div>
-
-        <div className="px-5 pb-2">
+        <div className="px-5 py-5">
           <h2 className="text-lg font-semibold text-text-primary">Cursos Recentes</h2>
         </div>
 

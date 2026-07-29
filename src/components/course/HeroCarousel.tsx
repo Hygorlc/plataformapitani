@@ -11,6 +11,10 @@ export function HeroVideo() {
         referrerPolicy="strict-origin-when-cross-origin"
         tabIndex={-1}
       />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.78)_100%)] shadow-[inset_0_0_70px_18px_rgba(0,0,0,0.55)]"
+      />
     </div>
   );
 }

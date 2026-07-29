@@ -10,10 +10,7 @@ const TABS = [
   { label: "Precificação e ofertas", segment: "pricing" },
   { label: "Área de membros", segment: "members-area" },
   { label: "Página do produto", segment: "product-page" },
-  { label: "Programa de afiliados", segment: "affiliates" },
   { label: "Coproduções", segment: "coproductions" },
-  { label: "Cupons", segment: "coupons" },
-  { label: "Coleta de impostos", segment: "taxes" },
   { label: "Ferramentas", segment: "tools" },
 ] as const;
 

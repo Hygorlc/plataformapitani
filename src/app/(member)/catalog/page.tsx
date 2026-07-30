@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCatalogCourses } from "@/lib/data/courses";
-import { HeroVideo } from "@/components/course/HeroCarousel";
+import { HeroMedia, type HeroSlide } from "@/components/course/HeroCarousel";
 import { CourseRow } from "@/components/course/CourseRow";
 
 export default async function CatalogPage() {
@@ -12,6 +12,11 @@ export default async function CatalogPage() {
   if (!user) redirect("/login");
 
   const courses = await getCatalogCourses(supabase, user.id);
+  const { data: heroSettings } = await supabase
+    .from("platform_settings")
+    .select("home_hero_mode, home_video_url, home_carousel_slides")
+    .eq("id", "main")
+    .maybeSingle();
 
   const inProgress = courses.filter((c) => c.status === "in_progress");
   const newCourses = courses.filter((c) => c.status === "new");
@@ -21,10 +26,30 @@ export default async function CatalogPage() {
       course.slug.toLowerCase() === "ipl" ||
       course.title.toLocaleLowerCase("pt-BR").includes("ipl")
   );
+  const heroSlides = Array.isArray(heroSettings?.home_carousel_slides)
+    ? heroSettings.home_carousel_slides
+        .map((slide): HeroSlide | null => {
+          if (!slide || typeof slide !== "object" || Array.isArray(slide)) return null;
+          return {
+            imageUrl: typeof slide.imageUrl === "string" ? slide.imageUrl : "",
+            title: typeof slide.title === "string" ? slide.title : "",
+            subtitle: typeof slide.subtitle === "string" ? slide.subtitle : "",
+          };
+        })
+        .filter((slide): slide is HeroSlide => slide !== null && !!slide.imageUrl)
+    : [];
 
   return (
     <div>
-      <HeroVideo promotionEndsAt={iplCourse?.promotionOfferEndsAt ?? null} />
+      <HeroMedia
+        mode={heroSettings?.home_hero_mode === "carousel" ? "carousel" : "video"}
+        videoUrl={
+          heroSettings?.home_video_url ??
+          "https://www.youtube.com/watch?v=RLBZNpJHjpI"
+        }
+        slides={heroSlides}
+        promotionEndsAt={iplCourse?.promotionOfferEndsAt ?? null}
+      />
 
       <div className="flex flex-col gap-10 py-8">
         <CourseRow title="Continuar Aprendendo" courses={inProgress} />

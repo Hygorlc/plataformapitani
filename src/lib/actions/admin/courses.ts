@@ -327,3 +327,78 @@ export async function deleteLesson(lessonId: string, courseId: string) {
   if (error) throw new Error(error.message);
   revalidatePath(`/admin/courses/${courseId}`, "layout");
 }
+
+const MAX_MATERIAL_BYTES = 50 * 1024 * 1024;
+
+export async function uploadLessonMaterial(
+  lessonId: string,
+  courseId: string,
+  formData: FormData
+) {
+  const file = formData.get("file");
+  const customTitle = String(formData.get("title") ?? "").trim();
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Selecione um arquivo.");
+  }
+  if (file.size > MAX_MATERIAL_BYTES) {
+    throw new Error("O arquivo deve ter no máximo 50 MB.");
+  }
+
+  const safeName = file.name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-");
+  const storagePath = `${courseId}/${lessonId}/${crypto.randomUUID()}-${safeName}`;
+  const admin = createAdminClient();
+
+  const { error: uploadError } = await admin.storage
+    .from("lesson-materials")
+    .upload(storagePath, file, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+  if (uploadError) throw new Error(`Falha no envio: ${uploadError.message}`);
+
+  const { data: publicUrl } = admin.storage
+    .from("lesson-materials")
+    .getPublicUrl(storagePath);
+  const { error: insertError } = await admin.from("lesson_materials").insert({
+    course_id: courseId,
+    lesson_id: lessonId,
+    title: customTitle || file.name,
+    file_name: file.name,
+    file_url: publicUrl.publicUrl,
+    storage_path: storagePath,
+    file_size_bytes: file.size,
+    mime_type: file.type || null,
+  });
+
+  if (insertError) {
+    await admin.storage.from("lesson-materials").remove([storagePath]);
+    throw new Error(insertError.message);
+  }
+
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
+}
+
+export async function deleteLessonMaterial(
+  materialId: string,
+  courseId: string
+) {
+  const admin = createAdminClient();
+  const { data: material } = await admin
+    .from("lesson_materials")
+    .select("storage_path")
+    .eq("id", materialId)
+    .single();
+  if (!material) throw new Error("Material não encontrado.");
+
+  const { error: storageError } = await admin.storage
+    .from("lesson-materials")
+    .remove([material.storage_path]);
+  if (storageError) throw new Error(storageError.message);
+
+  const { error } = await admin.from("lesson_materials").delete().eq("id", materialId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/courses/${courseId}`, "layout");
+}

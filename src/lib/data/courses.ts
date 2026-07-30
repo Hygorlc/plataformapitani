@@ -13,6 +13,7 @@ export interface CatalogCourse {
   description: string | null;
   instructor_name: string | null;
   thumbnail_url: string | null;
+  original_price_cents: number | null;
   price_cents: number;
   enrolled: boolean;
   progressPercent: number;
@@ -32,6 +33,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     instructor_name: "Pablo Pitani",
     thumbnail_url:
       "https://pablopitani.com.br/wp-content/uploads/2026/04/Thumb-domine-sua-rotina-1.png",
+    original_price_cents: null,
     price_cents: 0,
     enrolled: true,
     progressPercent: 0,
@@ -49,6 +51,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     instructor_name: "Pablo Pitani",
     thumbnail_url:
       "https://pablopitani.com.br/wp-content/uploads/2026/04/Thumb-neurovendas-2.png",
+    original_price_cents: null,
     price_cents: 0,
     enrolled: true,
     progressPercent: 0,
@@ -137,6 +140,7 @@ export async function getCatalogCourses(
       description: course.description,
       instructor_name: course.instructor_name,
       thumbnail_url: course.thumbnail_url,
+      original_price_cents: course.original_price_cents,
       price_cents: course.price_cents,
       enrolled,
       progressPercent,

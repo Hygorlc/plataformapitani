@@ -167,6 +167,16 @@ export interface CourseLesson {
   video_url: string;
   position: number;
   completed: boolean;
+  materials: LessonMaterial[];
+}
+
+export interface LessonMaterial {
+  id: string;
+  title: string;
+  file_name: string;
+  file_url: string;
+  file_size_bytes: number;
+  mime_type: string | null;
 }
 
 export interface CourseModule {
@@ -223,6 +233,7 @@ export async function getCourseDetail(
               video_url: videoUrl,
               position: 1,
               completed: false,
+              materials: [],
             },
           ],
         },
@@ -238,7 +249,13 @@ export async function getCourseDetail(
 
   if (!course) return null;
 
-  const [{ data: enrollment }, { data: modules }, { data: lessons }, { data: progress }] =
+  const [
+    { data: enrollment },
+    { data: modules },
+    { data: lessons },
+    { data: progress },
+    { data: materials },
+  ] =
     await Promise.all([
       supabase
         .from("enrollments")
@@ -262,6 +279,11 @@ export async function getCourseDetail(
         .select("lesson_id, completed")
         .eq("user_id", userId)
         .eq("course_id", course.id),
+      supabase
+        .from("lesson_materials")
+        .select("id, lesson_id, title, file_name, file_url, file_size_bytes, mime_type")
+        .eq("course_id", course.id)
+        .order("created_at"),
     ]);
 
   const completedLessonIds = new Set(
@@ -281,6 +303,16 @@ export async function getCourseDetail(
         video_url: l.video_url,
         position: l.position,
         completed: completedLessonIds.has(l.id),
+        materials: (materials ?? [])
+          .filter((material) => material.lesson_id === l.id)
+          .map((material) => ({
+            id: material.id,
+            title: material.title,
+            file_name: material.file_name,
+            file_url: material.file_url,
+            file_size_bytes: material.file_size_bytes,
+            mime_type: material.mime_type,
+          })),
       })),
   }));
 

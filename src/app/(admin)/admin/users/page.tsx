@@ -7,6 +7,7 @@ import {
 } from "@/lib/actions/admin/users";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { DeleteStudentButton } from "@/components/admin/DeleteStudentButton";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -111,6 +112,7 @@ export default async function AdminUsersPage() {
                   </p>
                 </td>
                 <td className="px-5 py-3">
+                  <div className="flex flex-wrap gap-2">
                   <form
                     action={updateUserRole.bind(
                       null,
@@ -122,6 +124,13 @@ export default async function AdminUsersPage() {
                       {user.role === "admin" ? "Rebaixar para Aluno" : "Promover a Admin"}
                     </Button>
                   </form>
+                  {user.role !== "admin" && (
+                    <DeleteStudentButton
+                      userId={user.id}
+                      studentName={user.full_name ?? user.email}
+                    />
+                  )}
+                  </div>
                 </td>
               </tr>
             ))}

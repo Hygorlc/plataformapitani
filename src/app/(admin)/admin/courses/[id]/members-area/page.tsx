@@ -7,6 +7,8 @@ import {
   deleteModule,
   createLesson,
   deleteLesson,
+  uploadLessonMaterial,
+  deleteLessonMaterial,
 } from "@/lib/actions/admin/courses";
 import { Button } from "@/components/ui/Button";
 
@@ -21,9 +23,14 @@ export default async function CourseMembersAreaPage({
   const { data: course } = await supabase.from("courses").select("id").eq("id", id).single();
   if (!course) notFound();
 
-  const [{ data: modules }, { data: lessons }] = await Promise.all([
+  const [{ data: modules }, { data: lessons }, { data: materials }] = await Promise.all([
     supabase.from("modules").select("*").eq("course_id", id).order("position"),
     supabase.from("lessons").select("*").eq("course_id", id).order("position"),
+    supabase
+      .from("lesson_materials")
+      .select("*")
+      .eq("course_id", id)
+      .order("created_at"),
   ]);
 
   return (
@@ -106,6 +113,77 @@ export default async function CourseMembersAreaPage({
                   Salvar Módulo
                 </Button>
               </form>
+
+              <div className="mt-4 flex flex-col gap-3">
+                {moduleLessons.map((lesson) => {
+                  const lessonMaterials = (materials ?? []).filter(
+                    (material) => material.lesson_id === lesson.id
+                  );
+                  return (
+                    <div key={lesson.id} className="rounded-lg border border-border bg-background p-3">
+                      <p className="text-sm font-medium text-text-primary">
+                        Materiais — {lesson.title}
+                      </p>
+                      {lessonMaterials.length > 0 && (
+                        <div className="mt-2 flex flex-col gap-2">
+                          {lessonMaterials.map((material) => (
+                            <div
+                              key={material.id}
+                              className="flex items-center justify-between gap-3 rounded-md bg-surface px-3 py-2"
+                            >
+                              <a
+                                href={material.file_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="min-w-0 truncate text-sm text-primary hover:underline"
+                              >
+                                {material.title}
+                              </a>
+                              <form
+                                action={deleteLessonMaterial.bind(
+                                  null,
+                                  material.id,
+                                  course.id
+                                )}
+                              >
+                                <button
+                                  type="submit"
+                                  title="Excluir material"
+                                  className="text-status-danger hover:opacity-80"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </form>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <form
+                        action={uploadLessonMaterial.bind(null, lesson.id, course.id)}
+                        className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
+                      >
+                        <input
+                          name="title"
+                          placeholder="Nome do material (opcional)"
+                          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                        />
+                        <input
+                          name="file"
+                          type="file"
+                          required
+                          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-secondary file:mr-3 file:border-0 file:bg-primary file:px-2 file:py-1 file:text-xs file:font-semibold file:text-background"
+                        />
+                        <Button type="submit" size="sm">
+                          Adicionar arquivo
+                        </Button>
+                      </form>
+                      <p className="mt-1 text-xs text-text-muted">
+                        PDF, documentos, planilhas, imagens, ZIP e outros arquivos — até 50 MB.
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
 
               <form
                 action={createLesson.bind(null, mod.id, course.id)}

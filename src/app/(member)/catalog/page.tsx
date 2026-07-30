@@ -16,10 +16,15 @@ export default async function CatalogPage() {
   const inProgress = courses.filter((c) => c.status === "in_progress");
   const newCourses = courses.filter((c) => c.status === "new");
   const completed = courses.filter((c) => c.status === "completed");
+  const iplCourse = courses.find(
+    (course) =>
+      course.slug.toLowerCase() === "ipl" ||
+      course.title.toLocaleLowerCase("pt-BR").includes("ipl")
+  );
 
   return (
     <div>
-      <HeroVideo />
+      <HeroVideo promotionEndsAt={iplCourse?.promotionEndsAt ?? null} />
 
       <div className="flex flex-col gap-10 py-8">
         <CourseRow title="Continuar Aprendendo" courses={inProgress} />

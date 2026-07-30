@@ -325,6 +325,60 @@ export type Database = {
           },
         ]
       }
+      lesson_materials: {
+        Row: {
+          course_id: string
+          created_at: string
+          file_name: string
+          file_size_bytes: number
+          file_url: string
+          id: string
+          lesson_id: string
+          mime_type: string | null
+          storage_path: string
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          file_name: string
+          file_size_bytes?: number
+          file_url: string
+          id?: string
+          lesson_id: string
+          mime_type?: string | null
+          storage_path: string
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          file_name?: string
+          file_size_bytes?: number
+          file_url?: string
+          id?: string
+          lesson_id?: string
+          mime_type?: string | null
+          storage_path?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_materials_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_materials_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           course_id: string

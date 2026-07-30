@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, FileText } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -63,6 +63,38 @@ export default async function LessonPlayerPage({
               />
             )}
           </div>
+
+          {current.materials.length > 0 && (
+            <div className="mt-6 rounded-xl border border-border bg-surface p-4">
+              <h2 className="font-semibold text-text-primary">Materiais da aula</h2>
+              <div className="mt-3 grid gap-2">
+                {current.materials.map((material) => (
+                  <a
+                    key={material.id}
+                    href={material.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    download={material.file_name}
+                    className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-3 transition-colors hover:border-primary/60"
+                  >
+                    <FileText size={20} className="shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-text-primary">
+                        {material.title}
+                      </span>
+                      <span className="text-xs text-text-muted">
+                        {(material.file_size_bytes / 1024 / 1024).toLocaleString("pt-BR", {
+                          maximumFractionDigits: 1,
+                        })}{" "}
+                        MB
+                      </span>
+                    </span>
+                    <Download size={18} className="text-text-secondary" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mt-4 flex items-center gap-3">
             <Link href={prev ? `/courses/${slug}/${prev.id}` : "#"}>

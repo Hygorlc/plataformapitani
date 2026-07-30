@@ -24,6 +24,9 @@ const statusToBadge: Record<CatalogCourse["status"], "new" | "progress" | "compl
 
 export function CourseCard({ course }: { course: CatalogCourse }) {
   const isLocked = !course.enrolled && course.price_cents > 0;
+  const hasDiscount =
+    course.original_price_cents !== null &&
+    course.original_price_cents > course.price_cents;
 
   return (
     <Link
@@ -43,11 +46,23 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
         </div>
 
         {isLocked && (
-          <div className="absolute right-2 top-2 flex items-center gap-1 rounded bg-background/80 px-2 py-0.5 text-xs font-semibold text-primary-light backdrop-blur-sm">
-            {(course.price_cents / 100).toLocaleString("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            })}
+          <div className="absolute right-2 top-2 flex items-center gap-1.5 rounded bg-background/85 px-2 py-1 text-xs backdrop-blur-sm">
+            {hasDiscount && (
+              <span className="text-text-muted line-through">
+                De{" "}
+                {(course.original_price_cents! / 100).toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </span>
+            )}
+            <span className="font-semibold text-primary-light">
+              {hasDiscount && "Por "}
+              {(course.price_cents / 100).toLocaleString("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              })}
+            </span>
           </div>
         )}
 

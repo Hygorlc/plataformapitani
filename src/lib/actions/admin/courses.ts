@@ -143,6 +143,9 @@ export async function updateCoursePricing(courseId: string, formData: FormData) 
 
   const priceReais = Number(formData.get("price") ?? 0);
   const priceCents = Math.max(0, Math.round(priceReais * 100));
+  const originalPriceReais = Number(formData.get("original_price") ?? 0);
+  const originalPriceCents =
+    originalPriceReais > 0 ? Math.round(originalPriceReais * 100) : null;
   const promotionEnabled = formData.get("promotion_enabled") === "on";
   const promotionText =
     String(formData.get("promotion_text") ?? "").trim().slice(0, 60) ||
@@ -156,6 +159,7 @@ export async function updateCoursePricing(courseId: string, formData: FormData) 
     .from("courses")
     .update({
       price_cents: priceCents,
+      original_price_cents: originalPriceCents,
       promotion_enabled: promotionEnabled,
       promotion_text: promotionText,
       promotion_days: promotionDays,

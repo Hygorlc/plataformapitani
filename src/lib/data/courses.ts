@@ -18,6 +18,7 @@ export interface CatalogCourse {
   progressPercent: number;
   status: CourseStatus;
   promotionEndsAt: string | null;
+  promotionOfferEndsAt: string | null;
   promotionLabel: string;
 }
 
@@ -36,6 +37,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     progressPercent: 0,
     status: "new",
     promotionEndsAt: null,
+    promotionOfferEndsAt: null,
     promotionLabel: "Condição especial",
   },
   {
@@ -52,6 +54,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     progressPercent: 0,
     status: "new",
     promotionEndsAt: null,
+    promotionOfferEndsAt: null,
     promotionLabel: "Condição especial",
   },
 ];
@@ -142,6 +145,7 @@ export async function getCatalogCourses(
         !enrolled && course.price_cents > 0 && course.promotion_enabled
           ? activePromotionEndsAt
           : null,
+      promotionOfferEndsAt: course.promotion_enabled ? activePromotionEndsAt : null,
       promotionLabel: course.promotion_text ?? "Condição especial",
     };
   });

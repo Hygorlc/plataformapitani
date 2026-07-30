@@ -1,6 +1,8 @@
+import { PromotionTimer } from "@/components/course/PromotionCountdown";
+
 const VIDEO_ID = "RLBZNpJHjpI";
 
-export function HeroVideo() {
+export function HeroVideo({ promotionEndsAt }: { promotionEndsAt: string | null }) {
   return (
     <div className="relative aspect-video w-full overflow-hidden bg-black md:aspect-[5/2]">
       <iframe
@@ -15,6 +17,12 @@ export function HeroVideo() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.78)_100%)] shadow-[inset_0_0_70px_18px_rgba(0,0,0,0.55)]"
       />
+      <div className="absolute bottom-5 left-5 z-10 flex flex-col items-start gap-2 md:bottom-8 md:left-10">
+        <p className="text-2xl font-bold tracking-wide text-white drop-shadow-lg md:text-4xl">
+          IPL
+        </p>
+        {promotionEndsAt && <PromotionTimer endAt={promotionEndsAt} />}
+      </div>
     </div>
   );
 }

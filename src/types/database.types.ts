@@ -325,6 +325,30 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          home_carousel_slides: Json
+          home_hero_mode: string
+          home_video_url: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          home_carousel_slides?: Json
+          home_hero_mode?: string
+          home_video_url?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          home_carousel_slides?: Json
+          home_hero_mode?: string
+          home_video_url?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lesson_materials: {
         Row: {
           course_id: string

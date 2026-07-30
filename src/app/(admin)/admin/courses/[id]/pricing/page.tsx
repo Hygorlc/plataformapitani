@@ -13,7 +13,9 @@ export default async function CoursePricingPage({
 
   const { data: courseWithPromotion, error: promotionError } = await supabase
     .from("courses")
-    .select("id, price_cents, promotion_enabled, promotion_text, promotion_days")
+    .select(
+      "id, price_cents, original_price_cents, promotion_enabled, promotion_text, promotion_days"
+    )
     .eq("id", id)
     .single();
   const { data: legacyCourse } = promotionError
@@ -26,6 +28,7 @@ export default async function CoursePricingPage({
           promotion_enabled: true,
           promotion_text: "Condição especial",
           promotion_days: 7,
+          original_price_cents: null,
         }
       : null);
   if (!course) notFound();
@@ -43,21 +46,39 @@ export default async function CoursePricingPage({
 
       <form action={updateCoursePricing.bind(null, course.id)} className="mt-6 max-w-md">
         <div className="rounded-xl border border-border bg-surface p-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="original_price" className="text-sm font-medium text-text-primary">
+                De (R$)
+              </label>
+              <input
+                id="original_price"
+                name="original_price"
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={(course.original_price_cents ?? 0) / 100}
+                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="price" className="text-sm font-medium text-text-primary">
+                Por (R$)
+              </label>
+              <input
+                id="price"
+                name="price"
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={course.price_cents / 100}
+                className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="price" className="text-sm font-medium text-text-primary">
-              Preço (R$)
-            </label>
-            <input
-              id="price"
-              name="price"
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={course.price_cents / 100}
-              className="rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-text-primary focus:border-primary focus:outline-none"
-            />
             <span className="text-xs text-text-muted">
-              Deixe 0 para oferecer o curso gratuitamente.
+              O valor “De” aparece riscado. Deixe “Por” em 0 para oferecer gratuitamente.
             </span>
           </div>
 

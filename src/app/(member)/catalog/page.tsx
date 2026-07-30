@@ -24,7 +24,7 @@ export default async function CatalogPage() {
 
   return (
     <div>
-      <HeroVideo promotionEndsAt={iplCourse?.promotionEndsAt ?? null} />
+      <HeroVideo promotionEndsAt={iplCourse?.promotionOfferEndsAt ?? null} />
 
       <div className="flex flex-col gap-10 py-8">
         <CourseRow title="Continuar Aprendendo" courses={inProgress} />

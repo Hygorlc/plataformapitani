@@ -17,6 +17,7 @@ async function requireAdmin() {
     .eq("id", user.id)
     .single();
   if (profile?.role !== "admin") throw new Error("Acesso não autorizado.");
+  return user;
 }
 
 export async function updateUserRole(userId: string, role: "student" | "admin") {
@@ -104,6 +105,31 @@ export async function addProductToUser(userId: string, formData: FormData) {
     .update({ student_since: now })
     .eq("id", userId)
     .is("student_since", null);
+
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/courses");
+}
+
+export async function deleteStudent(userId: string) {
+  const currentAdmin = await requireAdmin();
+  if (currentAdmin.id === userId) {
+    throw new Error("Você não pode excluir a própria conta.");
+  }
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (!profile) throw new Error("Aluno não encontrado.");
+  if (profile.role === "admin") {
+    throw new Error("Contas administrativas não podem ser excluídas por este botão.");
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) throw new Error(error.message);
 
   revalidatePath("/admin/users");
   revalidatePath("/admin/courses");

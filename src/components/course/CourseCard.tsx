@@ -46,9 +46,9 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
         </div>
 
         {isLocked && (
-          <div className="absolute right-2 top-2 flex items-center gap-1.5 rounded bg-background/85 px-2 py-1 text-xs backdrop-blur-sm">
+          <div className="absolute right-3 top-3 z-20 flex flex-col items-end rounded-lg border border-primary/60 bg-black/85 px-3 py-2 text-xs shadow-lg backdrop-blur-sm">
             {hasDiscount && (
-              <span className="text-text-muted line-through">
+              <span className="text-sm text-white/70 line-through">
                 De{" "}
                 {(course.original_price_cents! / 100).toLocaleString("pt-BR", {
                   style: "currency",
@@ -56,7 +56,7 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
                 })}
               </span>
             )}
-            <span className="font-semibold text-primary-light">
+            <span className="text-base font-bold text-primary">
               {hasDiscount && "Por "}
               {(course.price_cents / 100).toLocaleString("pt-BR", {
                 style: "currency",

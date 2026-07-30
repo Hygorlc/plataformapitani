@@ -30,7 +30,11 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
 
   return (
     <Link
-      href={`/courses/${course.slug}`}
+      href={
+        isLocked
+          ? `/courses/${course.slug}?comprar=1`
+          : `/courses/${course.slug}`
+      }
       className="group/card relative w-72 shrink-0 snap-start sm:w-80"
     >
       <div className="relative aspect-video overflow-hidden rounded-md ring-1 ring-border transition-all duration-300 ease-out group-hover/card:scale-110 group-hover/card:z-20 group-hover/card:shadow-2xl group-hover/card:shadow-black/60 group-hover/card:ring-primary/60">

@@ -164,6 +164,7 @@ export type Database = {
           instructor_avatar_url: string | null
           instructor_name: string | null
           language: string | null
+          original_price_cents: number | null
           price_cents: number
           promotion_days: number
           promotion_enabled: boolean
@@ -184,6 +185,7 @@ export type Database = {
           instructor_avatar_url?: string | null
           instructor_name?: string | null
           language?: string | null
+          original_price_cents?: number | null
           price_cents?: number
           promotion_days?: number
           promotion_enabled?: boolean
@@ -204,6 +206,7 @@ export type Database = {
           instructor_avatar_url?: string | null
           instructor_name?: string | null
           language?: string | null
+          original_price_cents?: number | null
           price_cents?: number
           promotion_days?: number
           promotion_enabled?: boolean

@@ -46,25 +46,42 @@ export default async function AdminCoursesPage() {
                 </td>
                 <td className="px-5 py-3 text-text-secondary">{course.studentCount}</td>
                 <td className="px-5 py-3">
-                  <PublishToggle courseId={course.id} status={course.status} />
+                  {course.isBuiltIn ? (
+                    <span className="inline-flex rounded-full bg-status-completed/15 px-2.5 py-1 text-xs font-medium text-status-completed">
+                      Publicado
+                    </span>
+                  ) : (
+                    <PublishToggle courseId={course.id} status={course.status} />
+                  )}
                 </td>
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
-                    <Link
-                      href={`/admin/courses/${course.id}/panel`}
-                      className="text-primary hover:underline"
-                    >
-                      Editar
-                    </Link>
-                    <form action={deleteCourse.bind(null, course.id)}>
-                      <button
-                        type="submit"
-                        className="text-status-danger hover:opacity-80"
-                        aria-label="Excluir curso"
+                    {course.isBuiltIn ? (
+                      <Link
+                        href={`/courses/${course.slug}`}
+                        className="text-primary hover:underline"
                       >
-                        <Trash2 size={16} />
-                      </button>
-                    </form>
+                        Visualizar
+                      </Link>
+                    ) : (
+                      <>
+                        <Link
+                          href={`/admin/courses/${course.id}/panel`}
+                          className="text-primary hover:underline"
+                        >
+                          Editar
+                        </Link>
+                        <form action={deleteCourse.bind(null, course.id)}>
+                          <button
+                            type="submit"
+                            className="text-status-danger hover:opacity-80"
+                            aria-label="Excluir curso"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </form>
+                      </>
+                    )}
                   </div>
                 </td>
               </tr>

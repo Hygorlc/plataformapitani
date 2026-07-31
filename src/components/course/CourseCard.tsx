@@ -37,6 +37,8 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
         currency: "BRL",
       })
     : null;
+  const showPromotionPrice =
+    isLocked && course.promotionEndsAt !== null && formattedOriginalPrice !== null;
 
   return (
     <Link
@@ -103,13 +105,15 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
         </h3>
         {isLocked ? (
           <p className="flex items-center gap-2 truncate text-sm font-medium">
-            {formattedOriginalPrice && (
+            {showPromotionPrice && (
               <span className="text-text-muted line-through">
                 De {formattedOriginalPrice}
               </span>
             )}
             <span className="text-emerald-500">
-              {hasDiscount ? `Por ${formattedPrice}` : `Investimento ${formattedPrice}`}
+              {showPromotionPrice
+                ? `Por ${formattedPrice}`
+                : `Investimento ${formattedPrice}`}
             </span>
           </p>
         ) : (

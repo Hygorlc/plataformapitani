@@ -59,6 +59,10 @@ export default async function CatalogPage() {
         promotionEndsAt={heroOfferCourse?.promotionOfferEndsAt ?? null}
         originalPriceCents={heroOfferCourse?.original_price_cents ?? null}
         priceCents={heroOfferCourse?.price_cents ?? null}
+        offerTitle={heroOfferCourse?.title ?? "Imersão IPL"}
+        offerHref={
+          heroOfferCourse ? `/courses/${heroOfferCourse.slug}?comprar=1` : null
+        }
       />
 
       <div className="flex flex-col gap-10 py-8">

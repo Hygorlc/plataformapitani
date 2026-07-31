@@ -26,6 +26,14 @@ export default async function CatalogPage() {
       course.slug.toLowerCase() === "ipl" ||
       course.title.toLocaleLowerCase("pt-BR").includes("ipl")
   );
+  const heroOfferCourse =
+    iplCourse ??
+    courses.find(
+      (course) =>
+        !course.enrolled &&
+        course.price_cents > 0 &&
+        course.promotionOfferEndsAt !== null
+    );
   const heroSlides = Array.isArray(heroSettings?.home_carousel_slides)
     ? heroSettings.home_carousel_slides
         .map((slide): HeroSlide | null => {
@@ -48,7 +56,9 @@ export default async function CatalogPage() {
           "https://www.youtube.com/watch?v=RLBZNpJHjpI"
         }
         slides={heroSlides}
-        promotionEndsAt={iplCourse?.promotionOfferEndsAt ?? null}
+        promotionEndsAt={heroOfferCourse?.promotionOfferEndsAt ?? null}
+        originalPriceCents={heroOfferCourse?.original_price_cents ?? null}
+        priceCents={heroOfferCourse?.price_cents ?? null}
       />
 
       <div className="flex flex-col gap-10 py-8">

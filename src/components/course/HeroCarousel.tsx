@@ -21,11 +21,15 @@ export function HeroMedia({
   videoUrl,
   slides,
   promotionEndsAt,
+  originalPriceCents,
+  priceCents,
 }: {
   mode: "video" | "carousel";
   videoUrl: string;
   slides: HeroSlide[];
   promotionEndsAt: string | null;
+  originalPriceCents: number | null;
+  priceCents: number | null;
 }) {
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -40,6 +44,11 @@ export function HeroMedia({
 
   const videoId = getYoutubeId(videoUrl);
   const validSlides = slides.filter((slide) => slide.imageUrl);
+  const formatPrice = (value: number) =>
+    (value / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
 
   return (
     <div className="relative aspect-video w-full overflow-hidden bg-black md:aspect-[5/2]">
@@ -98,12 +107,22 @@ export function HeroMedia({
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(0,0,0,0.78)_100%)] shadow-[inset_0_0_70px_18px_rgba(0,0,0,0.55)]"
       />
       {mode !== "carousel" && (
-      <div className="absolute bottom-5 left-5 z-10 flex flex-col items-start gap-2 md:bottom-8 md:left-10">
-        <p className="text-2xl font-bold tracking-wide text-white drop-shadow-lg md:text-4xl">
-          IPL
-        </p>
-        {promotionEndsAt && <PromotionTimer endAt={promotionEndsAt} />}
-      </div>
+        <div className="absolute bottom-5 left-5 z-10 flex flex-col items-start gap-2 md:bottom-8 md:left-10">
+          <p className="text-2xl font-bold tracking-wide text-white drop-shadow-lg md:text-4xl">
+            IPL
+          </p>
+          {promotionEndsAt && <PromotionTimer endAt={promotionEndsAt} />}
+          {priceCents !== null && priceCents > 0 && (
+            <div className="flex items-center gap-2 rounded-md bg-black/75 px-3 py-1.5 text-sm font-semibold shadow-lg backdrop-blur-sm md:text-base">
+              {originalPriceCents !== null && originalPriceCents > priceCents && (
+                <span className="text-white/65 line-through">
+                  De {formatPrice(originalPriceCents)}
+                </span>
+              )}
+              <span className="text-emerald-400">Por {formatPrice(priceCents)}</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

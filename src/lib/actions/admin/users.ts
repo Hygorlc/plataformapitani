@@ -139,30 +139,60 @@ export async function createStudent(formData: FormData) {
 
 export async function addProductToUser(userId: string, formData: FormData) {
   await requireAdmin();
-  const courseId = String(formData.get("course_id") ?? "").trim();
-  if (!courseId) throw new Error("Selecione um produto.");
+  const courseIds = [
+    ...new Set(
+      formData
+        .getAll("course_ids")
+        .map(String)
+        .map((value) => value.trim())
+        .filter(Boolean)
+    ),
+  ];
+  if (!courseIds.length) throw new Error("Selecione pelo menos um produto.");
 
   const admin = createAdminClient();
-  const { data: existing } = await admin
-    .from("enrollments")
+  const { data: validCourses, error: courseError } = await admin
+    .from("courses")
     .select("id")
+    .in("id", courseIds)
+    .eq("status", "published");
+  if (courseError) throw new Error(courseError.message);
+  if ((validCourses ?? []).length !== courseIds.length) {
+    throw new Error("Um ou mais produtos selecionados não estão disponíveis.");
+  }
+
+  const { data: existing, error: existingError } = await admin
+    .from("enrollments")
+    .select("id, course_id")
     .eq("user_id", userId)
-    .eq("course_id", courseId)
-    .maybeSingle();
+    .in("course_id", courseIds);
+  if (existingError) throw new Error(existingError.message);
 
   const now = new Date().toISOString();
-  const { error } = existing
-    ? await admin
-        .from("enrollments")
-        .update({ status: "active", enrolled_at: now })
-        .eq("id", existing.id)
-    : await admin.from("enrollments").insert({
-        user_id: userId,
-        course_id: courseId,
-        status: "active",
-        enrolled_at: now,
-      });
-  if (error) throw new Error(error.message);
+  const existingIds = (existing ?? []).map((enrollment) => enrollment.id);
+  if (existingIds.length) {
+    const { error } = await admin
+      .from("enrollments")
+      .update({ status: "active", enrolled_at: now })
+      .in("id", existingIds);
+    if (error) throw new Error(error.message);
+  }
+
+  const existingCourseIds = new Set(
+    (existing ?? []).map((enrollment) => enrollment.course_id)
+  );
+  const newEnrollments = courseIds
+    .filter((courseId) => !existingCourseIds.has(courseId))
+    .map((courseId) => ({
+      user_id: userId,
+      course_id: courseId,
+      status: "active",
+      enrolled_at: now,
+    }));
+  if (newEnrollments.length) {
+    const { error } = await admin.from("enrollments").insert(newEnrollments);
+    if (error) throw new Error(error.message);
+  }
 
   await admin
     .from("profiles")

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PromotionTimer } from "@/components/course/PromotionCountdown";
 
@@ -23,6 +24,8 @@ export function HeroMedia({
   promotionEndsAt,
   originalPriceCents,
   priceCents,
+  offerTitle,
+  offerHref,
 }: {
   mode: "video" | "carousel";
   videoUrl: string;
@@ -30,6 +33,8 @@ export function HeroMedia({
   promotionEndsAt: string | null;
   originalPriceCents: number | null;
   priceCents: number | null;
+  offerTitle: string;
+  offerHref: string | null;
 }) {
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -109,17 +114,27 @@ export function HeroMedia({
       {mode !== "carousel" && (
         <div className="absolute bottom-5 left-5 z-10 flex flex-col items-start gap-2 md:bottom-8 md:left-10">
           <p className="text-2xl font-bold tracking-wide text-white drop-shadow-lg md:text-4xl">
-            IPL
+            {offerTitle}
           </p>
           {promotionEndsAt && <PromotionTimer endAt={promotionEndsAt} />}
           {priceCents !== null && priceCents > 0 && (
-            <div className="flex items-center gap-2 rounded-md bg-black/75 px-3 py-1.5 text-sm font-semibold shadow-lg backdrop-blur-sm md:text-base">
-              {originalPriceCents !== null && originalPriceCents > priceCents && (
-                <span className="text-white/65 line-through">
-                  De {formatPrice(originalPriceCents)}
-                </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 rounded-md bg-black/75 px-3 py-1.5 text-sm font-semibold shadow-lg backdrop-blur-sm md:text-base">
+                {originalPriceCents !== null && originalPriceCents > priceCents && (
+                  <span className="text-white/65 line-through">
+                    De {formatPrice(originalPriceCents)}
+                  </span>
+                )}
+                <span className="text-emerald-400">Por {formatPrice(priceCents)}</span>
+              </div>
+              {offerHref && (
+                <Link
+                  href={offerHref}
+                  className="pointer-events-auto rounded-md bg-primary px-4 py-2 text-sm font-bold text-black shadow-lg transition-colors hover:bg-primary-light md:text-base"
+                >
+                  Saiba mais
+                </Link>
               )}
-              <span className="text-emerald-400">Por {formatPrice(priceCents)}</span>
             </div>
           )}
         </div>

@@ -245,9 +245,44 @@ export async function deleteStudent(userId: string) {
     throw new Error("Contas administrativas não podem ser excluídas por este botão.");
   }
 
+  const { data: authData, error: authError } =
+    await admin.auth.admin.getUserById(userId);
+  if (authError) throw new Error(authError.message);
+
+  const email = normalizeAssignmentEmail(authData.user.email ?? "");
+  if (!email) {
+    throw new Error("Não foi possível identificar o e-mail do aluno.");
+  }
+
+  const { error: progressError } = await admin
+    .from("lesson_progress")
+    .delete()
+    .eq("user_id", userId);
+  if (progressError) throw new Error(progressError.message);
+
+  const { error: enrollmentError } = await admin
+    .from("enrollments")
+    .delete()
+    .eq("user_id", userId);
+  if (enrollmentError) throw new Error(enrollmentError.message);
+
+  const { error: claimedInviteError } = await admin
+    .from("course_access_invites")
+    .delete()
+    .eq("claimed_by", userId);
+  if (claimedInviteError) throw new Error(claimedInviteError.message);
+
+  const { error: emailInviteError } = await admin
+    .from("course_access_invites")
+    .delete()
+    .eq("email", email);
+  if (emailInviteError) throw new Error(emailInviteError.message);
+
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/users");
   revalidatePath("/admin/courses");
+  revalidatePath("/catalog");
+  revalidatePath("/my-courses");
 }

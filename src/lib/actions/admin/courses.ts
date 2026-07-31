@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPitaniCourseVideoUrl, PITANI_COURSES } from "@/lib/data/courses";
 import type { TablesUpdate } from "@/types/database.types";
 
 function slugify(input: string): string {
@@ -47,6 +48,81 @@ async function uniqueSlug(base: string): Promise<string> {
   let n = 2;
   while (taken.has(`${base}-${n}`)) n++;
   return `${base}-${n}`;
+}
+
+export async function materializeBuiltInCourse(slug: string) {
+  const template = PITANI_COURSES.find((course) => course.slug === slug);
+  if (!template) throw new Error("Curso padrão não encontrado.");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "admin") throw new Error("Acesso não autorizado.");
+
+  const admin = createAdminClient();
+  const { data: existing, error: existingError } = await admin
+    .from("courses")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+
+  let courseId = existing?.id;
+  if (!courseId) {
+    const { data: course, error: courseError } = await admin
+      .from("courses")
+      .insert({
+        title: template.title,
+        slug: template.slug,
+        description: template.description,
+        category: template.category,
+        instructor_name: template.instructor_name,
+        thumbnail_url: template.thumbnail_url,
+        price_cents: template.price_cents,
+        status: "published",
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+    if (courseError) throw new Error(courseError.message);
+    courseId = course.id;
+
+    const { data: module, error: moduleError } = await admin
+      .from("modules")
+      .insert({ course_id: courseId, title: "Treinamento", position: 1 })
+      .select("id")
+      .single();
+    if (moduleError) {
+      await admin.from("courses").delete().eq("id", courseId);
+      throw new Error(moduleError.message);
+    }
+
+    const { error: lessonError } = await admin.from("lessons").insert({
+      course_id: courseId,
+      module_id: module.id,
+      title: template.title,
+      description: template.description,
+      video_url: getPitaniCourseVideoUrl(template.slug),
+      position: 1,
+    });
+    if (lessonError) {
+      await admin.from("courses").delete().eq("id", courseId);
+      throw new Error(lessonError.message);
+    }
+  }
+
+  revalidatePath("/admin/courses");
+  revalidatePath("/catalog");
+  revalidatePath(`/courses/${slug}`);
+  redirect(`/admin/courses/${courseId}/panel`);
 }
 
 export async function createCourseWizard(formData: FormData) {

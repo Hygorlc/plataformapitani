@@ -65,6 +65,12 @@ export const PITANI_COURSES: CatalogCourse[] = [
   },
 ];
 
+export function getPitaniCourseVideoUrl(slug: string): string {
+  return slug === "domine-sua-rotina"
+    ? "https://www.youtube.com/watch?v=PDN85o-jvD8"
+    : "https://www.youtube.com/watch?v=9sRoTNfdEUk";
+}
+
 export function isPitaniCourseId(courseId: string): boolean {
   return courseId.startsWith("pitani-");
 }
@@ -207,13 +213,16 @@ export async function getCourseDetail(
   slug: string,
   userId: string
 ): Promise<CourseDetail | null> {
+  const { data: course } = await supabase
+    .from("courses")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
   const pitaniCourse = PITANI_COURSES.find((course) => course.slug === slug);
-  if (pitaniCourse) {
+  if (!course && pitaniCourse) {
     const lessonId = `${pitaniCourse.id}-aula`;
-    const videoUrl =
-      slug === "domine-sua-rotina"
-        ? "https://www.youtube.com/watch?v=PDN85o-jvD8"
-        : "https://www.youtube.com/watch?v=9sRoTNfdEUk";
+    const videoUrl = getPitaniCourseVideoUrl(slug);
 
     return {
       id: pitaniCourse.id,
@@ -244,12 +253,6 @@ export async function getCourseDetail(
       ],
     };
   }
-
-  const { data: course } = await supabase
-    .from("courses")
-    .select("*")
-    .eq("slug", slug)
-    .single();
 
   if (!course) return null;
 

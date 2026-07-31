@@ -2,6 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  applyPendingCourseAssignments,
+  normalizeAssignmentEmail,
+} from "@/lib/course-assignments";
 
 export interface AuthFormState {
   error?: string;
@@ -13,7 +17,7 @@ export async function signup(
   formData: FormData
 ): Promise<AuthFormState> {
   const fullName = String(formData.get("fullName") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  const email = normalizeAssignmentEmail(String(formData.get("email") ?? ""));
   const password = String(formData.get("password") ?? "");
 
   if (!fullName || !email || !password) {
@@ -34,6 +38,10 @@ export async function signup(
     return { error: error.message };
   }
 
+  if (data.user?.email) {
+    await applyPendingCourseAssignments(data.user.id, data.user.email);
+  }
+
   // If email confirmation is required, signUp succeeds but returns no session.
   if (!data.session) {
     return { confirmEmailSent: true };
@@ -46,7 +54,7 @@ export async function login(
   _prevState: AuthFormState,
   formData: FormData
 ): Promise<AuthFormState> {
-  const email = String(formData.get("email") ?? "").trim();
+  const email = normalizeAssignmentEmail(String(formData.get("email") ?? ""));
   const password = String(formData.get("password") ?? "");
   const redirectTo = String(formData.get("redirectTo") ?? "") || "/catalog";
 
@@ -55,7 +63,7 @@ export async function login(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -67,6 +75,10 @@ export async function login(
       };
     }
     return { error: "E-mail ou senha inválidos." };
+  }
+
+  if (data.user.email) {
+    await applyPendingCourseAssignments(data.user.id, data.user.email);
   }
 
   redirect(redirectTo);

@@ -88,6 +88,35 @@ export interface AdminUserRow {
   enrolledCourseIds: string[];
 }
 
+export interface CourseAccessAssignmentRow {
+  id: string;
+  email: string;
+  courseTitle: string;
+  created_at: string;
+  claimed_at: string | null;
+}
+
+export async function getCourseAccessAssignments(): Promise<CourseAccessAssignmentRow[]> {
+  const admin = createAdminClient();
+  const [{ data: assignments }, { data: courses }] = await Promise.all([
+    admin
+      .from("course_access_invites")
+      .select("id, email, course_id, created_at, claimed_at")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    admin.from("courses").select("id, title"),
+  ]);
+  const courseTitleById = new Map((courses ?? []).map((course) => [course.id, course.title]));
+
+  return (assignments ?? []).map((assignment) => ({
+    id: assignment.id,
+    email: assignment.email,
+    courseTitle: courseTitleById.get(assignment.course_id) ?? "Curso removido",
+    created_at: assignment.created_at,
+    claimed_at: assignment.claimed_at,
+  }));
+}
+
 export async function getAdminUsers(supabase: TypedClient): Promise<AdminUserRow[]> {
   const [{ data: profiles }, { data: enrollments }, admin] = await Promise.all([
     supabase.from("profiles").select("*"),

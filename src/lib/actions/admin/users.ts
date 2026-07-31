@@ -174,6 +174,29 @@ export async function addProductToUser(userId: string, formData: FormData) {
   revalidatePath("/admin/courses");
 }
 
+export async function updateStudentPassword(userId: string, formData: FormData) {
+  await requireAdmin();
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) {
+    throw new Error("A nova senha precisa ter pelo menos 8 caracteres.");
+  }
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!profile || profile.role === "admin") {
+    throw new Error("A senha só pode ser alterada por esta opção para contas de alunos.");
+  }
+
+  const { error } = await admin.auth.admin.updateUserById(userId, { password });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/users");
+}
+
 export async function deleteStudent(userId: string) {
   const currentAdmin = await requireAdmin();
   if (currentAdmin.id === userId) {

@@ -1,16 +1,23 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { login, type AuthFormState } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
 
 const initialState: AuthFormState = {};
 
-export function LoginForm() {
+export function LoginForm({ whatsappNumber }: { whatsappNumber: string }) {
   const [state, formAction, pending] = useActionState(login, initialState);
+  const [email, setEmail] = useState("");
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/catalog";
+  const recoveryMessage = encodeURIComponent(
+    `Olá! Esqueci minha senha da Pitani Academy e preciso de ajuda para recuperar o acesso. Meu e-mail cadastrado é: ${email || "[informe seu e-mail]"}.`
+  );
+  const recoveryUrl = whatsappNumber
+    ? `https://wa.me/${whatsappNumber}?text=${recoveryMessage}`
+    : null;
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -25,6 +32,8 @@ export function LoginForm() {
           name="email"
           type="email"
           required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
           className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:border-primary focus:outline-none"
         />
       </div>
@@ -49,6 +58,21 @@ export function LoginForm() {
       <Button type="submit" disabled={pending} className="mt-2 w-full">
         {pending ? "Entrando..." : "Entrar"}
       </Button>
+
+      {recoveryUrl ? (
+        <a
+          href={recoveryUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="text-center text-sm font-medium text-primary hover:underline"
+        >
+          Esqueceu a senha? Recuperar pelo WhatsApp
+        </a>
+      ) : (
+        <p className="text-center text-xs text-text-muted">
+          Recuperação pelo WhatsApp temporariamente indisponível.
+        </p>
+      )}
     </form>
   );
 }

@@ -11,6 +11,7 @@ export interface CatalogCourse {
   title: string;
   slug: string;
   description: string | null;
+  category: string | null;
   instructor_name: string | null;
   thumbnail_url: string | null;
   original_price_cents: number | null;
@@ -30,6 +31,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     slug: "domine-sua-rotina",
     description:
       "Aprenda a organizar prioridades, criar uma rotina produtiva e avançar com consistência em direção aos seus objetivos.",
+    category: "Cursos Online",
     instructor_name: "Pablo Pitani",
     thumbnail_url:
       "https://pablopitani.com.br/wp-content/uploads/2026/04/Thumb-domine-sua-rotina-1.png",
@@ -48,6 +50,7 @@ const PITANI_COURSES: CatalogCourse[] = [
     slug: "neurovendas",
     description:
       "Conheça princípios de comportamento e comunicação aplicados a vendas para criar conexões e apresentar valor com mais clareza.",
+    category: "Cursos Online",
     instructor_name: "Pablo Pitani",
     thumbnail_url:
       "https://pablopitani.com.br/wp-content/uploads/2026/04/Thumb-neurovendas-2.png",
@@ -138,6 +141,7 @@ export async function getCatalogCourses(
       title: course.title,
       slug: course.slug,
       description: course.description,
+      category: course.category,
       instructor_name: course.instructor_name,
       thumbnail_url: course.thumbnail_url,
       original_price_cents: course.original_price_cents,

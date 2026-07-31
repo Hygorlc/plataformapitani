@@ -62,7 +62,7 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
         </div>
 
         {isLocked && course.promotionEndsAt && (
-          <div className="pointer-events-none absolute bottom-3 left-3 z-20">
+          <div className="pointer-events-none absolute right-3 top-3 z-20">
             <PromotionTimer endAt={course.promotionEndsAt} />
           </div>
         )}

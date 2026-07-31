@@ -109,7 +109,7 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
               </span>
             )}
             <span className="text-emerald-500">
-              {hasDiscount ? `Por ${formattedPrice}` : `A partir de ${formattedPrice}`}
+              {hasDiscount ? `Por ${formattedPrice}` : `Investimento ${formattedPrice}`}
             </span>
           </p>
         ) : (

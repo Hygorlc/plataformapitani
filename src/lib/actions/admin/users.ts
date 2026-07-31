@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  applyPendingCourseAssignments,
+  normalizeAssignmentEmail,
+} from "@/lib/course-assignments";
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -27,6 +31,66 @@ export async function updateUserRole(userId: string, role: "student" | "admin") 
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/users");
+}
+
+export async function assignCoursesByEmail(formData: FormData) {
+  const currentAdmin = await requireAdmin();
+  const email = normalizeAssignmentEmail(String(formData.get("email") ?? ""));
+  const courseIds = [
+    ...new Set(
+      formData
+        .getAll("course_ids")
+        .map(String)
+        .map((value) => value.trim())
+        .filter(Boolean)
+    ),
+  ];
+
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    throw new Error("Informe um e-mail válido.");
+  }
+  if (!courseIds.length) {
+    throw new Error("Selecione pelo menos um curso.");
+  }
+
+  const admin = createAdminClient();
+  const { data: validCourses, error: courseError } = await admin
+    .from("courses")
+    .select("id")
+    .in("id", courseIds)
+    .eq("status", "published");
+  if (courseError) throw new Error(courseError.message);
+  if ((validCourses ?? []).length !== courseIds.length) {
+    throw new Error("Um ou mais cursos selecionados não estão disponíveis.");
+  }
+
+  const { error: inviteError } = await admin.from("course_access_invites").upsert(
+    courseIds.map((courseId) => ({
+      email,
+      course_id: courseId,
+      created_by: currentAdmin.id,
+      created_at: new Date().toISOString(),
+      claimed_at: null,
+      claimed_by: null,
+    })),
+    { onConflict: "email,course_id" }
+  );
+  if (inviteError) throw new Error(inviteError.message);
+
+  const { data: authData, error: authError } = await admin.auth.admin.listUsers({
+    perPage: 1000,
+  });
+  if (authError) throw new Error(authError.message);
+  const existingUser = authData.users.find(
+    (user) => normalizeAssignmentEmail(user.email ?? "") === email
+  );
+  if (existingUser) {
+    await applyPendingCourseAssignments(existingUser.id, email);
+  }
+
+  revalidatePath("/admin/users");
+  revalidatePath("/catalog");
+  revalidatePath("/my-courses");
 }
 
 export async function createStudent(formData: FormData) {

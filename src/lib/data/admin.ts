@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PITANI_COURSES } from "@/lib/data/courses";
 
 type TypedClient = SupabaseClient<Database>;
 
@@ -54,15 +55,18 @@ export async function getDashboardStats(supabase: TypedClient): Promise<Dashboar
 export interface AdminCourseRow {
   id: string;
   title: string;
+  slug: string;
   instructor_name: string | null;
   status: string;
   studentCount: number;
+  isBuiltIn: boolean;
 }
 
 export async function getAdminCourses(supabase: TypedClient): Promise<AdminCourseRow[]> {
-  const [{ data: courses }, { data: enrollments }] = await Promise.all([
+  const [{ data: courses }, { data: enrollments }, { data: students }] = await Promise.all([
     supabase.from("courses").select("*").order("created_at", { ascending: false }),
     supabase.from("enrollments").select("course_id"),
+    supabase.from("profiles").select("id").eq("role", "student"),
   ]);
 
   const countByCourse = new Map<string, number>();
@@ -70,13 +74,30 @@ export async function getAdminCourses(supabase: TypedClient): Promise<AdminCours
     countByCourse.set(e.course_id, (countByCourse.get(e.course_id) ?? 0) + 1);
   });
 
-  return (courses ?? []).map((c) => ({
+  const databaseCourses = (courses ?? []).map((c) => ({
     id: c.id,
     title: c.title,
+    slug: c.slug,
     instructor_name: c.instructor_name,
     status: c.status,
     studentCount: countByCourse.get(c.id) ?? 0,
+    isBuiltIn: false,
   }));
+
+  const databaseSlugs = new Set(databaseCourses.map((course) => course.slug));
+  const builtInCourses = PITANI_COURSES.filter(
+    (course) => !databaseSlugs.has(course.slug)
+  ).map((course) => ({
+    id: course.id,
+    title: course.title,
+    slug: course.slug,
+    instructor_name: course.instructor_name,
+    status: "published",
+    studentCount: students?.length ?? 0,
+    isBuiltIn: true,
+  }));
+
+  return [...builtInCourses, ...databaseCourses];
 }
 
 export interface AdminUserRow {

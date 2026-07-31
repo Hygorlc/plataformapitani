@@ -24,7 +24,7 @@ export interface CatalogCourse {
   promotionLabel: string;
 }
 
-const PITANI_COURSES: CatalogCourse[] = [
+export const PITANI_COURSES: CatalogCourse[] = [
   {
     id: "pitani-domine-sua-rotina",
     title: "Treinamento Domine sua Rotina",

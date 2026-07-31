@@ -2,7 +2,10 @@ import Link from "next/link";
 import { Plus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminCourses } from "@/lib/data/admin";
-import { deleteCourse } from "@/lib/actions/admin/courses";
+import {
+  deleteCourse,
+  materializeBuiltInCourse,
+} from "@/lib/actions/admin/courses";
 import { PublishToggle } from "@/components/admin/PublishToggle";
 import { Button } from "@/components/ui/Button";
 
@@ -57,12 +60,11 @@ export default async function AdminCoursesPage() {
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
                     {course.isBuiltIn ? (
-                      <Link
-                        href={`/courses/${course.slug}`}
-                        className="text-primary hover:underline"
-                      >
-                        Visualizar
-                      </Link>
+                      <form action={materializeBuiltInCourse.bind(null, course.slug)}>
+                        <button type="submit" className="text-primary hover:underline">
+                          Editar
+                        </button>
+                      </form>
                     ) : (
                       <>
                         <Link

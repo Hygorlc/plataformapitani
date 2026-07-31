@@ -31,6 +31,12 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
     style: "currency",
     currency: "BRL",
   });
+  const formattedOriginalPrice = hasDiscount
+    ? (course.original_price_cents! / 100).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      })
+    : null;
 
   return (
     <Link
@@ -54,27 +60,6 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
             <span className="text-sm font-bold">{statusLabel[course.status]}</span>
           </Badge>
         </div>
-
-        {isLocked && (
-          <div className="absolute right-3 top-3 z-20 flex flex-col items-end rounded-lg border border-primary/60 bg-black/85 px-3 py-2 text-xs shadow-lg backdrop-blur-sm">
-            {hasDiscount && (
-              <span className="text-sm text-white/70 line-through">
-                De{" "}
-                {(course.original_price_cents! / 100).toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                })}
-              </span>
-            )}
-            <span className="text-base font-bold text-primary">
-              {hasDiscount && "Por "}
-              {(course.price_cents / 100).toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              })}
-            </span>
-          </div>
-        )}
 
         {isLocked && course.promotionEndsAt && (
           <div className="pointer-events-none absolute bottom-3 left-3 z-20">
@@ -116,13 +101,22 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
         <h3 className="truncate text-base font-semibold leading-tight text-text-primary">
           {course.title}
         </h3>
-        <p className="truncate text-sm font-medium text-emerald-500">
-          {isLocked
-            ? `A partir de ${formattedPrice}`
-            : course.price_cents === 0
-              ? "Acesso gratuito"
-              : "Acesso liberado"}
-        </p>
+        {isLocked ? (
+          <p className="flex items-center gap-2 truncate text-sm font-medium">
+            {formattedOriginalPrice && (
+              <span className="text-text-muted line-through">
+                De {formattedOriginalPrice}
+              </span>
+            )}
+            <span className="text-emerald-500">
+              {hasDiscount ? `Por ${formattedPrice}` : `A partir de ${formattedPrice}`}
+            </span>
+          </p>
+        ) : (
+          <p className="truncate text-sm font-medium text-emerald-500">
+            {course.price_cents === 0 ? "Acesso gratuito" : "Acesso liberado"}
+          </p>
+        )}
       </div>
     </Link>
   );

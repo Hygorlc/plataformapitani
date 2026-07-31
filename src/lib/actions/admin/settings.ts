@@ -18,6 +18,53 @@ export async function saveHomeHeroSettings(formData: FormData) {
     .single();
   if (profile?.role !== "admin") throw new Error("Acesso não autorizado.");
 
+  const admin = createAdminClient();
+  const { data: currentSettings } = await admin
+    .from("platform_settings")
+    .select("home_carousel_slides")
+    .eq("id", "main")
+    .maybeSingle();
+  const currentItems = Array.isArray(currentSettings?.home_carousel_slides)
+    ? currentSettings.home_carousel_slides
+    : [];
+  const supportItems = currentItems.filter(
+    (item) =>
+      item &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
+      (item as Record<string, unknown>).kind === "support"
+  );
+
+  if (formData.get("settings_section") === "whatsapp") {
+    let whatsappNumber = String(formData.get("support_whatsapp_number") ?? "").replace(/\D/g, "");
+    if (whatsappNumber.length === 10 || whatsappNumber.length === 11) {
+      whatsappNumber = `55${whatsappNumber}`;
+    }
+    if (whatsappNumber && !/^\d{12,15}$/.test(whatsappNumber)) {
+      throw new Error("Informe um número de WhatsApp válido com país e DDD.");
+    }
+
+    const { error } = await admin.from("platform_settings").upsert({
+      id: "main",
+      home_carousel_slides: [
+        { kind: "support", whatsappNumber },
+        ...currentItems.filter(
+          (item) =>
+            !item ||
+            typeof item !== "object" ||
+            Array.isArray(item) ||
+            (item as Record<string, unknown>).kind !== "support"
+        ),
+      ],
+      updated_at: new Date().toISOString(),
+    });
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/admin/settings");
+    revalidatePath("/login");
+    return;
+  }
+
   const mode = formData.get("home_hero_mode") === "carousel" ? "carousel" : "video";
   const videoUrl =
     String(formData.get("home_video_url") ?? "").trim() ||
@@ -39,12 +86,11 @@ export async function saveHomeHeroSettings(formData: FormData) {
     throw new Error("Adicione pelo menos uma imagem válida para o carrossel.");
   }
 
-  const admin = createAdminClient();
   const { error } = await admin.from("platform_settings").upsert({
     id: "main",
     home_hero_mode: mode,
     home_video_url: videoUrl,
-    home_carousel_slides: slides,
+    home_carousel_slides: [...supportItems, ...slides],
     updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(error.message);

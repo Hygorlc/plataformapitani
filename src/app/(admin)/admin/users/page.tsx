@@ -4,6 +4,7 @@ import {
   addProductToUser,
   assignCoursesByEmail,
   createStudent,
+  updateStudentPassword,
   updateUserRole,
 } from "@/lib/actions/admin/users";
 import { Badge } from "@/components/ui/Badge";
@@ -217,10 +218,32 @@ export default async function AdminUsersPage() {
                     </Button>
                   </form>
                   {user.role !== "admin" && (
-                    <DeleteStudentButton
-                      userId={user.id}
-                      studentName={user.full_name ?? user.email}
-                    />
+                    <>
+                      <details className="relative">
+                        <summary className="cursor-pointer list-none rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-surface-hover">
+                          Alterar senha
+                        </summary>
+                        <form
+                          action={updateStudentPassword.bind(null, user.id)}
+                          className="absolute right-0 z-30 mt-2 flex w-72 gap-2 rounded-lg border border-border bg-surface p-3 shadow-xl"
+                        >
+                          <input
+                            name="password"
+                            type="password"
+                            minLength={8}
+                            required
+                            autoComplete="new-password"
+                            placeholder="Nova senha (mín. 8)"
+                            className="min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                          />
+                          <Button type="submit" size="sm">Salvar</Button>
+                        </form>
+                      </details>
+                      <DeleteStudentButton
+                        userId={user.id}
+                        studentName={user.full_name ?? user.email}
+                      />
+                    </>
                   )}
                   </div>
                 </td>

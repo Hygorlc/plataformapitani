@@ -184,22 +184,43 @@ export default async function AdminUsersPage() {
                   {new Date(user.created_at).toLocaleDateString("pt-BR")}
                 </td>
                 <td className="px-5 py-3">
-                  <form action={addProductToUser.bind(null, user.id)} className="flex min-w-72 gap-2">
-                    <select
-                      name="course_id"
-                      required
-                      defaultValue=""
-                      className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-text-primary focus:border-primary focus:outline-none"
+                  <details className="relative min-w-72">
+                    <summary className="cursor-pointer list-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-text-primary hover:border-primary/60">
+                      Liberar produtos
+                    </summary>
+                    <form
+                      action={addProductToUser.bind(null, user.id)}
+                      className="absolute left-0 z-30 mt-2 w-80 rounded-lg border border-border bg-surface p-3 shadow-xl"
                     >
-                      <option value="" disabled>Adicionar produto...</option>
-                      {(courses ?? []).map((course) => (
-                        <option key={course.id} value={course.id}>
-                          {user.enrolledCourseIds.includes(course.id) ? "✓ " : ""}{course.title}
-                        </option>
-                      ))}
-                    </select>
-                    <Button type="submit" variant="secondary" size="sm">Liberar</Button>
-                  </form>
+                      <p className="text-xs text-text-muted">
+                        Marque quantos produtos desejar.
+                      </p>
+                      <div className="mt-2 grid max-h-56 gap-2 overflow-y-auto">
+                        {(courses ?? []).map((course) => {
+                          const enrolled = user.enrolledCourseIds.includes(course.id);
+                          return (
+                            <label
+                              key={course.id}
+                              className="flex items-start gap-2 rounded-md border border-border bg-background p-2 text-sm text-text-secondary"
+                            >
+                              <input
+                                type="checkbox"
+                                name="course_ids"
+                                value={course.id}
+                                defaultChecked={enrolled}
+                                disabled={enrolled}
+                                className="mt-0.5 h-4 w-4 accent-primary"
+                              />
+                              <span>{course.title}{enrolled ? " — já liberado" : ""}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <Button type="submit" variant="secondary" size="sm" className="mt-3 w-full">
+                        Liberar selecionados
+                      </Button>
+                    </form>
+                  </details>
                   <p className="mt-1 text-xs text-text-muted">
                     {user.enrolledCourseIds.length} produto(s) ativo(s)
                   </p>

@@ -27,6 +27,10 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
   const hasDiscount =
     course.original_price_cents !== null &&
     course.original_price_cents > course.price_cents;
+  const formattedPrice = (course.price_cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 
   return (
     <Link
@@ -105,10 +109,19 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
         )}
       </div>
 
-      <div className="mt-2">
-        <h3 className="truncate text-sm font-medium text-text-primary">{course.title}</h3>
+      <div className="mt-3 space-y-1 px-0.5">
         <p className="truncate text-xs text-text-muted">
-          {course.instructor_name ?? "Pitani Academy"}
+          {course.category ?? "Cursos Online"}
+        </p>
+        <h3 className="truncate text-base font-semibold leading-tight text-text-primary">
+          {course.title}
+        </h3>
+        <p className="truncate text-sm font-medium text-emerald-500">
+          {isLocked
+            ? `A partir de ${formattedPrice}`
+            : course.price_cents === 0
+              ? "Acesso gratuito"
+              : "Acesso liberado"}
         </p>
       </div>
     </Link>

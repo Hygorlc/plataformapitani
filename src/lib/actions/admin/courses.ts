@@ -216,6 +216,19 @@ export async function updateCourseInfo(courseId: string, formData: FormData) {
 
 export async function updateCoursePricing(courseId: string, formData: FormData) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "admin") throw new Error("Acesso não autorizado.");
+
+  const admin = createAdminClient();
 
   const priceReais = Number(formData.get("price") ?? 0);
   const priceCents = Math.max(0, Math.round(priceReais * 100));
@@ -231,7 +244,7 @@ export async function updateCoursePricing(courseId: string, formData: FormData) 
     Math.max(1, Math.round(Number(formData.get("promotion_days") ?? 7) || 7))
   );
 
-  const { error } = await supabase
+  const { error } = await admin
     .from("courses")
     .update({
       price_cents: priceCents,
@@ -243,7 +256,7 @@ export async function updateCoursePricing(courseId: string, formData: FormData) 
     })
     .eq("id", courseId);
   if (error?.code === "42703") {
-    const { error: legacyError } = await supabase
+    const { error: legacyError } = await admin
       .from("courses")
       .update({ price_cents: priceCents, updated_at: new Date().toISOString() })
       .eq("id", courseId);
@@ -254,6 +267,8 @@ export async function updateCoursePricing(courseId: string, formData: FormData) 
 
   revalidatePath(`/admin/courses/${courseId}`, "layout");
   revalidatePath("/admin/courses");
+  revalidatePath("/admin/users");
+  revalidatePath("/catalog");
 }
 
 

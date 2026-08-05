@@ -7,7 +7,6 @@ const TABS = [
   { label: "Painel", segment: "panel" },
   { label: "Links de divulgação", segment: "links" },
   { label: "Informações básicas", segment: "info" },
-  { label: "Precificação e ofertas", segment: "pricing" },
   { label: "Área de membros", segment: "members-area" },
   { label: "Página do produto", segment: "product-page" },
   { label: "Coproduções", segment: "coproductions" },

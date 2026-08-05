@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DeleteStudentButton } from "@/components/admin/DeleteStudentButton";
+import { CourseOfferSettings } from "@/components/admin/CourseOfferSettings";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -18,7 +19,9 @@ export default async function AdminUsersPage() {
     getCourseAccessAssignments(),
     supabase
       .from("courses")
-      .select("id, title")
+      .select(
+        "id, title, price_cents, original_price_cents, promotion_enabled, promotion_text, promotion_days"
+      )
       .eq("status", "published")
       .order("title"),
   ]);
@@ -76,6 +79,8 @@ export default async function AdminUsersPage() {
         </div>
         <Button type="submit" className="mt-4">Salvar liberações</Button>
       </form>
+
+      <CourseOfferSettings courses={courses ?? []} />
 
       {assignments.length > 0 && (
         <div className="mt-6 overflow-hidden rounded-xl border border-border bg-surface">

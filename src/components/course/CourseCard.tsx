@@ -57,7 +57,7 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
           thumbnailUrl={course.thumbnail_url}
         />
 
-        <div className="absolute left-3 top-3 z-20 rounded-lg border border-primary/50 bg-black/85 px-2.5 py-1.5 shadow-lg backdrop-blur-sm">
+        <div className="absolute left-3 top-3 z-20">
           <Badge status={statusToBadge[course.status]}>
             <span className="text-sm font-bold">{statusLabel[course.status]}</span>
           </Badge>

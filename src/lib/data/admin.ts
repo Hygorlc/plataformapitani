@@ -63,10 +63,9 @@ export interface AdminCourseRow {
 }
 
 export async function getAdminCourses(supabase: TypedClient): Promise<AdminCourseRow[]> {
-  const [{ data: courses }, { data: enrollments }, { data: students }] = await Promise.all([
+  const [{ data: courses }, { data: enrollments }] = await Promise.all([
     supabase.from("courses").select("*").order("created_at", { ascending: false }),
     supabase.from("enrollments").select("course_id"),
-    supabase.from("profiles").select("id").eq("role", "student"),
   ]);
 
   const countByCourse = new Map<string, number>();
@@ -74,7 +73,7 @@ export async function getAdminCourses(supabase: TypedClient): Promise<AdminCours
     countByCourse.set(e.course_id, (countByCourse.get(e.course_id) ?? 0) + 1);
   });
 
-  const databaseCourses = (courses ?? []).map((c) => ({
+  const databaseCourses = (courses ?? []).filter((c) => c.status !== "deleted").map((c) => ({
     id: c.id,
     title: c.title,
     slug: c.slug,
@@ -84,7 +83,7 @@ export async function getAdminCourses(supabase: TypedClient): Promise<AdminCours
     isBuiltIn: false,
   }));
 
-  const databaseSlugs = new Set(databaseCourses.map((course) => course.slug));
+  const databaseSlugs = new Set((courses ?? []).map((course) => course.slug));
   const builtInCourses = PITANI_COURSES.filter(
     (course) => !databaseSlugs.has(course.slug)
   ).map((course) => ({
@@ -92,8 +91,8 @@ export async function getAdminCourses(supabase: TypedClient): Promise<AdminCours
     title: course.title,
     slug: course.slug,
     instructor_name: course.instructor_name,
-    status: "published",
-    studentCount: students?.length ?? 0,
+    status: "closed",
+    studentCount: 0,
     isBuiltIn: true,
   }));
 

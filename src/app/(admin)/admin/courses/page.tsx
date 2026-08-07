@@ -50,8 +50,8 @@ export default async function AdminCoursesPage() {
                 <td className="px-5 py-3 text-text-secondary">{course.studentCount}</td>
                 <td className="px-5 py-3">
                   {course.isBuiltIn ? (
-                    <span className="inline-flex rounded-full bg-status-completed/15 px-2.5 py-1 text-xs font-medium text-status-completed">
-                      Publicado
+                    <span className="inline-flex rounded-full bg-status-danger/15 px-2.5 py-1 text-xs font-medium text-status-danger">
+                      Fechado
                     </span>
                   ) : (
                     <PublishToggle courseId={course.id} status={course.status} />

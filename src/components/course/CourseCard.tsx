@@ -23,7 +23,8 @@ const statusToBadge: Record<CatalogCourse["status"], "new" | "progress" | "compl
 };
 
 export function CourseCard({ course }: { course: CatalogCourse }) {
-  const isLocked = !course.enrolled && course.price_cents > 0;
+  const isLocked =
+    !course.enrolled && (course.requiresExplicitAccess || course.price_cents > 0);
   const hasDiscount =
     course.original_price_cents !== null &&
     course.original_price_cents > course.price_cents;
@@ -110,11 +111,15 @@ export function CourseCard({ course }: { course: CatalogCourse }) {
                 De {formattedOriginalPrice}
               </span>
             )}
-            <span className="text-emerald-500">
-              {showPromotionPrice
-                ? `Por ${formattedPrice}`
-                : `Investimento ${formattedPrice}`}
-            </span>
+            {course.price_cents > 0 ? (
+              <span className="text-emerald-500">
+                {showPromotionPrice
+                  ? `Por ${formattedPrice}`
+                  : `Investimento ${formattedPrice}`}
+              </span>
+            ) : (
+              <span className="text-text-secondary">Acesso fechado</span>
+            )}
           </p>
         ) : (
           <p className="truncate text-sm font-medium text-emerald-500">

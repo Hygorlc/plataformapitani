@@ -17,6 +17,7 @@ export interface CatalogCourse {
   original_price_cents: number | null;
   price_cents: number;
   enrolled: boolean;
+  requiresExplicitAccess: boolean;
   progressPercent: number;
   status: CourseStatus;
   promotionEndsAt: string | null;
@@ -37,7 +38,8 @@ export const PITANI_COURSES: CatalogCourse[] = [
       "https://pablopitani.com.br/wp-content/uploads/2026/04/Thumb-domine-sua-rotina-1.png",
     original_price_cents: null,
     price_cents: 0,
-    enrolled: true,
+    enrolled: false,
+    requiresExplicitAccess: true,
     progressPercent: 0,
     status: "new",
     promotionEndsAt: null,
@@ -56,7 +58,8 @@ export const PITANI_COURSES: CatalogCourse[] = [
       "https://pablopitani.com.br/wp-content/uploads/2026/04/Thumb-neurovendas-2.png",
     original_price_cents: null,
     price_cents: 0,
-    enrolled: true,
+    enrolled: false,
+    requiresExplicitAccess: true,
     progressPercent: 0,
     status: "new",
     promotionEndsAt: null,
@@ -75,6 +78,17 @@ export function isPitaniCourseId(courseId: string): boolean {
   return courseId.startsWith("pitani-");
 }
 
+const CLOSED_COURSE_SLUGS = new Set([
+  "domine-sua-rotina",
+  "neurovendas",
+  "ipl",
+  "imersao-ipl",
+]);
+
+export function requiresExplicitCourseAccess(slug: string): boolean {
+  return CLOSED_COURSE_SLUGS.has(slug.toLowerCase());
+}
+
 const NEW_WINDOW_DAYS = 14;
 
 export async function getCatalogCourses(
@@ -89,7 +103,7 @@ export async function getCatalogCourses(
     { data: profile },
   ] =
     await Promise.all([
-      supabase.from("courses").select("*").eq("status", "published"),
+      supabase.from("courses").select("*"),
       supabase.from("lessons").select("id, course_id"),
       supabase
         .from("enrollments")
@@ -121,7 +135,9 @@ export async function getCatalogCourses(
   });
 
   const now = Date.now();
-  const databaseCourses = (courses ?? []).map((course) => {
+  const databaseCourses = (courses ?? [])
+    .filter((course) => course.status === "published")
+    .map((course) => {
     const enrolled = enrolledCourseIds.has(course.id);
     const total = lessonCountByCourse.get(course.id) ?? 0;
     const completed = completedCountByCourse.get(course.id) ?? 0;
@@ -153,6 +169,7 @@ export async function getCatalogCourses(
       original_price_cents: course.original_price_cents,
       price_cents: course.price_cents,
       enrolled,
+      requiresExplicitAccess: requiresExplicitCourseAccess(course.slug),
       progressPercent,
       status,
       promotionEndsAt:
@@ -164,7 +181,7 @@ export async function getCatalogCourses(
     };
   });
 
-  const databaseSlugs = new Set(databaseCourses.map((course) => course.slug));
+  const databaseSlugs = new Set((courses ?? []).map((course) => course.slug));
   const pitaniCourses = PITANI_COURSES.filter((course) => !databaseSlugs.has(course.slug));
 
   return [...pitaniCourses, ...databaseCourses];
@@ -205,6 +222,7 @@ export interface CourseDetail {
   thumbnail_url: string | null;
   price_cents: number;
   enrolled: boolean;
+  requiresExplicitAccess: boolean;
   modules: CourseModule[];
 }
 
@@ -219,6 +237,8 @@ export async function getCourseDetail(
     .eq("slug", slug)
     .maybeSingle();
 
+  if (course?.status === "deleted") return null;
+
   const pitaniCourse = PITANI_COURSES.find((course) => course.slug === slug);
   if (!course && pitaniCourse) {
     const lessonId = `${pitaniCourse.id}-aula`;
@@ -232,7 +252,8 @@ export async function getCourseDetail(
       instructor_name: pitaniCourse.instructor_name,
       thumbnail_url: pitaniCourse.thumbnail_url,
       price_cents: pitaniCourse.price_cents,
-      enrolled: true,
+      enrolled: false,
+      requiresExplicitAccess: true,
       modules: [
         {
           id: `${pitaniCourse.id}-modulo`,
@@ -332,6 +353,7 @@ export async function getCourseDetail(
     thumbnail_url: course.thumbnail_url,
     price_cents: course.price_cents,
     enrolled: !!enrollment,
+    requiresExplicitAccess: requiresExplicitCourseAccess(course.slug),
     modules: courseModules,
   };
 }

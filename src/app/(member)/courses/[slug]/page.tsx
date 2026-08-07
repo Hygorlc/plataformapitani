@@ -61,6 +61,8 @@ export default async function CourseOverviewPage({
                   {isCompleted ? "Revisar" : "Continuar"}
                 </Button>
               </Link>
+            ) : course.requiresExplicitAccess && course.price_cents === 0 ? (
+              <Button disabled>Acesso fechado</Button>
             ) : course.price_cents === 0 ? (
               <EnrollFreeButton courseId={course.id} courseSlug={course.slug} />
             ) : (
@@ -85,7 +87,8 @@ export default async function CourseOverviewPage({
           <p className="text-text-secondary">{course.description}</p>
         )}
 
-        {course.modules.length > 0 && (
+        {course.modules.length > 0 &&
+          (!course.requiresExplicitAccess || course.enrolled) && (
           <div className="mt-8">
             <h2 className="mb-4 text-lg font-semibold text-text-primary">
               Conteúdo do Curso

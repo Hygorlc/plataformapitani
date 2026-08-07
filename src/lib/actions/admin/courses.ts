@@ -287,10 +287,82 @@ export async function togglePublish(courseId: string, nextStatus: "draft" | "pub
 
 export async function deleteCourse(courseId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("courses").delete().eq("id", courseId);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "admin") throw new Error("Acesso não autorizado.");
+
+  const admin = createAdminClient();
+  const { data: course, error: courseError } = await admin
+    .from("courses")
+    .select("slug")
+    .eq("id", courseId)
+    .maybeSingle();
+  if (courseError) throw new Error(courseError.message);
+  if (!course) throw new Error("Curso não encontrado.");
+
+  const { data: comments, error: commentsError } = await admin
+    .from("comments")
+    .select("id")
+    .eq("course_id", courseId);
+  if (commentsError) throw new Error(commentsError.message);
+
+  const commentIds = (comments ?? []).map((comment) => comment.id);
+  if (commentIds.length > 0) {
+    const { error } = await admin
+      .from("comment_reactions")
+      .delete()
+      .in("comment_id", commentIds);
+    if (error) throw new Error(error.message);
+  }
+
+  const { data: materials, error: materialsError } = await admin
+    .from("lesson_materials")
+    .select("storage_path")
+    .eq("course_id", courseId);
+  if (materialsError) throw new Error(materialsError.message);
+
+  const storagePaths = (materials ?? []).map((material) => material.storage_path);
+  if (storagePaths.length > 0) {
+    const { error } = await admin.storage.from("lesson-materials").remove(storagePaths);
+    if (error) throw new Error(error.message);
+  }
+
+  for (const table of [
+    "certificates",
+    "comments",
+    "lesson_progress",
+    "enrollments",
+    "course_access_invites",
+    "lesson_materials",
+    "lessons",
+    "modules",
+  ] as const) {
+    const { error } = await admin.from(table).delete().eq("course_id", courseId);
+    if (error) throw new Error(error.message);
+  }
+
+  // Mantém apenas uma marca interna para que cursos padrão excluídos não reapareçam.
+  const { error } = await admin
+    .from("courses")
+    .update({ status: "deleted", updated_at: new Date().toISOString() })
+    .eq("id", courseId);
   if (error) throw new Error(error.message);
 
+  revalidatePath("/admin");
   revalidatePath("/admin/courses");
+  revalidatePath("/admin/users");
+  revalidatePath("/catalog");
+  revalidatePath("/my-courses");
+  revalidatePath("/community");
+  revalidatePath(`/courses/${course.slug}`, "layout");
   redirect("/admin/courses");
 }
 

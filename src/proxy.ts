@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const MEMBER_PREFIXES = [
   "/catalog",
   "/my-courses",
+  "/mentorships",
   "/certificates",
   "/community",
   "/support",
@@ -72,6 +73,7 @@ export const config = {
   matcher: [
     "/catalog/:path*",
     "/my-courses/:path*",
+    "/mentorships/:path*",
     "/certificates/:path*",
     "/community/:path*",
     "/support/:path*",

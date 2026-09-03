@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GraduationCap, Search, Bell } from "lucide-react";
 import { LogoutButton } from "@/components/layout/LogoutButton";
+import { ProfileMenu } from "@/components/layout/ProfileMenu";
 
 const navItems = [
   { label: "Início", href: "/catalog" },
@@ -15,7 +16,6 @@ const navItems = [
 
 export function Navbar({ userName }: { userName: string }) {
   const pathname = usePathname();
-  const initial = userName.charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-md">
@@ -55,9 +55,7 @@ export function Navbar({ userName }: { userName: string }) {
             <Bell size={20} />
             <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-primary" />
           </button>
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-primary text-sm font-semibold text-background">
-            {initial}
-          </div>
+          <ProfileMenu userName={userName} />
           <LogoutButton />
         </div>
       </div>

@@ -1,0 +1,123 @@
+From 8903bb596c6b5e6a9ace2bb0e206f9201b5375bd Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 3 Sep 2026 20:50:25 +0000
+Subject: [PATCH] Ocultar encontros do portal do cliente
+
+Remove a secao "Encontros" da area de mentoria e para de expor os
+dados de encontros na camada de acesso do cliente. Os registros
+seguem intactos no banco.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01JkeP9umxuR61dD94DmVMDx
+---
+ src/app/(member)/mentorships/page.tsx | 31 ---------------------------
+ src/lib/data/mentorship.ts            | 23 --------------------
+ 2 files changed, 54 deletions(-)
+
+diff --git a/src/app/(member)/mentorships/page.tsx b/src/app/(member)/mentorships/page.tsx
+index ab947ca..20ccf8d 100644
+--- a/src/app/(member)/mentorships/page.tsx
++++ b/src/app/(member)/mentorships/page.tsx
+@@ -146,37 +146,6 @@ export default async function MentorshipsPage() {
+         <SummaryCard icon={BookOpen} label="Materiais disponíveis" value={String(availableModules.length)} />
+       </div>
+ 
+-      <section className="mt-10">
+-        <h2 className="text-xl font-semibold text-text-primary">Encontros</h2>
+-        <div className="mt-4 grid gap-3">
+-          {access.encounters.length ? (
+-            access.encounters.map((encounter) => (
+-              <div
+-                key={`${encounter.number}-${encounter.title}`}
+-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-5 py-4"
+-              >
+-                <div>
+-                  <p className="text-sm text-text-muted">Encontro {encounter.number}</p>
+-                  <p className="font-medium text-text-primary">{encounter.title}</p>
+-                </div>
+-                <div className="text-right text-sm">
+-                  <p className="text-text-secondary">
+-                    {statusLabel[encounter.status] ?? encounter.status}
+-                  </p>
+-                  {encounter.scheduledAt && (
+-                    <p className="mt-1 text-text-muted">{formatDate(encounter.scheduledAt)}</p>
+-                  )}
+-                </div>
+-              </div>
+-            ))
+-          ) : (
+-            <p className="rounded-xl border border-border bg-surface p-5 text-text-secondary">
+-              Os encontros aparecerão aqui assim que forem agendados.
+-            </p>
+-          )}
+-        </div>
+-      </section>
+-
+       <section className="mt-12">
+         <h2 className="text-3xl font-semibold text-text-primary">Meus Materiais</h2>
+         <p className="mt-2 text-text-secondary">
+diff --git a/src/lib/data/mentorship.ts b/src/lib/data/mentorship.ts
+index af4e8ee..6bcaab0 100644
+--- a/src/lib/data/mentorship.ts
++++ b/src/lib/data/mentorship.ts
+@@ -12,13 +12,6 @@ export interface MentorshipModuleSummary {
+   content: unknown;
+ }
+ 
+-export interface MentorshipEncounterSummary {
+-  number: number;
+-  title: string;
+-  status: string;
+-  scheduledAt: string | null;
+-}
+-
+ export interface MentorshipTaskSummary {
+   id: string;
+   title: string;
+@@ -50,7 +43,6 @@ export interface MentorshipAccess {
+   taskCount: number;
+   completedTaskCount: number;
+   modules: MentorshipModuleSummary[];
+-  encounters: MentorshipEncounterSummary[];
+   tasks: MentorshipTaskSummary[];
+   files: MentorshipFileSummary[];
+ }
+@@ -66,7 +58,6 @@ const emptyAccess = (state: MentorshipAccess["state"]): MentorshipAccess => ({
+   taskCount: 0,
+   completedTaskCount: 0,
+   modules: [],
+-  encounters: [],
+   tasks: [],
+   files: [],
+ });
+@@ -153,7 +144,6 @@ export async function getMentorshipAccessByEmail(
+     const product = products.find((item) => item.id === productId);
+     const tasks = asRecordArray(client.tasks);
+     const modules = asRecordArray(client.modules);
+-    const encounters = asRecordArray(client.encounters);
+     const files = asRecordArray(client.files);
+ 
+     return {
+@@ -172,19 +162,6 @@ export async function getMentorshipAccessByEmail(
+         status: asString(module.status) ?? "rascunho",
+         content: module.conteudo ?? null,
+       })),
+-      encounters: encounters
+-        .map((encounter) => ({
+-          number:
+-            typeof encounter.encounter_numero === "number"
+-              ? encounter.encounter_numero
+-              : 0,
+-          title:
+-            asString(encounter.titulo) ??
+-            `Encontro ${String(encounter.encounter_numero ?? "")}`,
+-          status: asString(encounter.status) ?? "nao_iniciada",
+-          scheduledAt: asString(encounter.data_agendada),
+-        }))
+-        .sort((a, b) => a.number - b.number),
+       tasks: tasks.map((task, index) => ({
+         id: asString(task.id) ?? `task-${index}`,
+         title: asString(task.titulo) ?? "Tarefa",
+-- 
+2.43.0
+

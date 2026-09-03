@@ -9,6 +9,7 @@ export interface MentorshipModuleSummary {
   type: string;
   title: string;
   status: string;
+  content: unknown;
 }
 
 export interface MentorshipEncounterSummary {
@@ -144,6 +145,7 @@ export async function getMentorshipAccessByEmail(
         type: asString(module.tipo) ?? "modulo",
         title: asString(module.titulo) ?? "Módulo",
         status: asString(module.status) ?? "rascunho",
+        content: module.conteudo ?? null,
       })),
       encounters: encounters
         .map((encounter) => ({

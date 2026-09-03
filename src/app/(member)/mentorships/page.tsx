@@ -1,6 +1,13 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
-import { BookOpen, CalendarDays, CheckCircle2, ListChecks } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  ListChecks,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getMentorshipAccessByEmail } from "@/lib/data/mentorship";
 import { LiveMentorshipRefresh } from "@/components/mentorships/LiveMentorshipRefresh";
@@ -125,32 +132,26 @@ export default async function MentorshipsPage() {
         <h2 className="text-xl font-semibold text-text-primary">Materiais</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {availableModules.length ? (
-            availableModules.map((module, index) => (
-              <details
-                key={`${module.type}-${index}`}
-                className="group rounded-xl border border-border bg-surface"
+            availableModules.map((module) => (
+              <Link
+                key={module.type}
+                href={`/mentorships/materials/${encodeURIComponent(module.type)}`}
+                className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary/60 hover:bg-surface-hover"
               >
-                <summary className="flex cursor-pointer list-none items-center gap-3 p-5">
-                  <BookOpen size={20} className="shrink-0 text-primary" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium text-text-primary">
-                      {module.title}
-                    </span>
-                    <span className="mt-1 block text-sm text-status-completed">
-                      Disponível
-                    </span>
+                <BookOpen size={20} className="shrink-0 text-primary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium text-text-primary">
+                    {module.title}
                   </span>
-                  <span className="text-sm font-medium text-primary group-open:hidden">
-                    Abrir conteúdo
+                  <span className="mt-1 block text-sm text-status-completed">
+                    Disponível
                   </span>
-                  <span className="hidden text-sm font-medium text-primary group-open:inline">
-                    Fechar
-                  </span>
-                </summary>
-                <div className="border-t border-border px-5 py-6">
-                  <StructuredContent value={module.content} />
-                </div>
-              </details>
+                </span>
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+                  Abrir conteúdo
+                  <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </Link>
             ))
           ) : (
             <p className="text-text-secondary">Nenhum material publicado ainda.</p>
@@ -159,96 +160,6 @@ export default async function MentorshipsPage() {
       </section>
     </div>
   );
-}
-
-function humanizeKey(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function safeExternalUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:"
-      ? url.toString()
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function StructuredContent({ value, depth = 0 }: { value: unknown; depth?: number }) {
-  if (value === null || value === undefined || value === "") {
-    return <p className="text-sm text-text-muted">Conteúdo ainda não informado.</p>;
-  }
-
-  if (typeof value === "string") {
-    const url = safeExternalUrl(value);
-    return url ? (
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="break-all text-sm font-medium text-primary hover:underline"
-      >
-        Abrir link do material
-      </a>
-    ) : (
-      <p className="whitespace-pre-wrap text-sm leading-6 text-text-secondary">
-        {value}
-      </p>
-    );
-  }
-
-  if (typeof value === "number" || typeof value === "boolean") {
-    return <p className="text-sm text-text-secondary">{String(value)}</p>;
-  }
-
-  if (Array.isArray(value)) {
-    if (!value.length) {
-      return <p className="text-sm text-text-muted">Nenhum item informado.</p>;
-    }
-
-    return (
-      <div className="space-y-3">
-        {value.map((item, index) => (
-          <div
-            key={index}
-            className={
-              typeof item === "object" && item !== null
-                ? "rounded-lg border border-border bg-background/40 p-4"
-                : "border-l-2 border-primary/40 pl-3"
-            }
-          >
-            <StructuredContent value={item} depth={depth + 1} />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (typeof value === "object" && depth < 8) {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (!entries.length) {
-      return <p className="text-sm text-text-muted">Conteúdo em preparação.</p>;
-    }
-
-    return (
-      <div className="space-y-5">
-        {entries.map(([key, item]) => (
-          <section key={key}>
-            <h4 className="mb-2 text-sm font-semibold text-text-primary">
-              {humanizeKey(key)}
-            </h4>
-            <StructuredContent value={item} depth={depth + 1} />
-          </section>
-        ))}
-      </div>
-    );
-  }
-
-  return <p className="text-sm text-text-muted">Conteúdo indisponível.</p>;
 }
 
 function SummaryCard({

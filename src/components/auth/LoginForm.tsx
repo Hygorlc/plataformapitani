@@ -64,9 +64,9 @@ export function LoginForm({ whatsappNumber }: { whatsappNumber: string }) {
           href={recoveryUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-center text-sm font-medium text-primary hover:underline"
+          className="flex w-full items-center justify-center rounded-lg border border-primary/60 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
         >
-          Esqueceu a senha? Recuperar pelo WhatsApp
+          Recuperar senha
         </a>
       ) : (
         <p className="text-center text-xs text-text-muted">

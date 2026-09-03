@@ -6,7 +6,13 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  Fingerprint,
   ListChecks,
+  PenTool,
+  Stethoscope,
+  Target,
+  TrendingUp,
+  UserRound,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getMentorshipAccessByEmail } from "@/lib/data/mentorship";
@@ -22,6 +28,49 @@ const statusLabel: Record<string, string> = {
   em_revisao: "Em revisão",
   publicado: "Disponível",
 };
+
+const modulePresentation: Record<
+  string,
+  { description: string; icon: typeof BookOpen }
+> = {
+  diagnostico: {
+    description: "Análise de mercado, SWOT, persona ideal e plano de 90 dias",
+    icon: Stethoscope,
+  },
+  identidade_fundador: {
+    description: "História de origem, valores e personalidade do fundador",
+    icon: UserRound,
+  },
+  posicionamento: {
+    description: "Categoria, tese, promessa, inimigo nomeado e público ideal",
+    icon: Target,
+  },
+  identidade_marca: {
+    description: "Propósito, arquétipos, manifesto, narrativa e códigos da marca",
+    icon: Fingerprint,
+  },
+  conteudos: {
+    description: "Pilares, calendário editorial, roteiros e guia de Stories",
+    icon: PenTool,
+  },
+  estrategias: {
+    description: "Ofertas, funil de vendas, canais e metas comerciais",
+    icon: TrendingUp,
+  },
+  estrategias_marketing_vendas: {
+    description: "Ofertas, funil de vendas, canais e metas comerciais",
+    icon: TrendingUp,
+  },
+};
+
+function getModulePresentation(type: string) {
+  return (
+    modulePresentation[type] ?? {
+      description: "Conteúdo estratégico desenvolvido durante a sua mentoria",
+      icon: BookOpen,
+    }
+  );
+}
 
 function formatDate(value: string | null) {
   if (!value) return "—";
@@ -128,37 +177,86 @@ export default async function MentorshipsPage() {
         </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-xl font-semibold text-text-primary">Materiais</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {availableModules.length ? (
-            availableModules.map((module) => (
-              <Link
-                key={module.type}
-                href={`/mentorships/materials/${encodeURIComponent(module.type)}`}
-                className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary/60 hover:bg-surface-hover"
-              >
-                <BookOpen size={20} className="shrink-0 text-primary" />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-medium text-text-primary">
-                    {module.title}
-                  </span>
-                  <span className="mt-1 block text-sm text-status-completed">
-                    Disponível
-                  </span>
-                </span>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
-                  Abrir conteúdo
-                  <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </Link>
+      <section className="mt-12">
+        <h2 className="text-3xl font-semibold text-text-primary">Meus Materiais</h2>
+        <p className="mt-2 text-text-secondary">
+          Todos os módulos construídos durante a mentoria
+        </p>
+        <div className="mt-7 grid gap-5 lg:grid-cols-2">
+          {access.modules.length ? (
+            access.modules.map((module) => (
+              <MentorshipModuleCard key={module.type} module={module} />
             ))
           ) : (
-            <p className="text-text-secondary">Nenhum material publicado ainda.</p>
+            <p className="text-text-secondary">Nenhum material cadastrado ainda.</p>
           )}
         </div>
       </section>
     </div>
+  );
+}
+
+function MentorshipModuleCard({
+  module,
+}: {
+  module: { type: string; title: string; status: string };
+}) {
+  const available = module.status === "publicado";
+  const presentation = getModulePresentation(module.type);
+  const Icon = presentation.icon;
+  const cardClassName =
+    "group flex min-h-64 flex-col rounded-2xl border border-border bg-surface p-6 transition-all lg:p-7";
+  const content = (
+    <>
+      <div className="flex items-start justify-between gap-4">
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+          <Icon size={24} />
+        </span>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${
+            available
+              ? "bg-status-completed/15 text-status-completed"
+              : "bg-primary/10 text-primary-light"
+          }`}
+        >
+          {statusLabel[module.status] ?? module.status}
+        </span>
+      </div>
+
+      <h3 className="mt-7 text-xl font-semibold text-text-primary">
+        {module.title}
+      </h3>
+      <p className="mt-3 leading-6 text-text-secondary">
+        {presentation.description}
+      </p>
+
+      <span
+        className={`mt-auto inline-flex items-center gap-2 pt-7 text-sm font-semibold ${
+          available ? "text-primary" : "text-text-muted"
+        }`}
+      >
+        {available ? "Ver módulo" : "Aguardando liberação"}
+        {available && (
+          <ArrowRight
+            size={16}
+            className="transition-transform group-hover:translate-x-1"
+          />
+        )}
+      </span>
+    </>
+  );
+
+  if (!available) {
+    return <div className={`${cardClassName} opacity-75`}>{content}</div>;
+  }
+
+  return (
+    <Link
+      href={`/mentorships/materials/${encodeURIComponent(module.type)}`}
+      className={`${cardClassName} hover:-translate-y-0.5 hover:border-primary/60 hover:bg-surface-hover hover:shadow-[0_16px_40px_rgba(0,0,0,0.28)]`}
+    >
+      {content}
+    </Link>
   );
 }
 

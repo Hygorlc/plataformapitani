@@ -1,7 +1,9 @@
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { BookOpen, CalendarDays, CheckCircle2, ListChecks } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getMentorshipAccessByEmail } from "@/lib/data/mentorship";
+import { LiveMentorshipRefresh } from "@/components/mentorships/LiveMentorshipRefresh";
 
 const statusLabel: Record<string, string> = {
   ativo: "Ativa",
@@ -23,6 +25,7 @@ function formatDate(value: string | null) {
 }
 
 export default async function MentorshipsPage() {
+  await connection();
   const supabase = await createClient();
   const {
     data: { user },
@@ -35,6 +38,9 @@ export default async function MentorshipsPage() {
     return (
       <div className="px-6 py-10 lg:px-12">
         <h1 className="text-2xl font-semibold text-text-primary">Mentorias</h1>
+        <div className="mt-3">
+          <LiveMentorshipRefresh />
+        </div>
         <div className="mt-6 max-w-2xl rounded-xl border border-border bg-surface p-6">
           <h2 className="font-semibold text-text-primary">
             {access.state === "unavailable"
@@ -68,6 +74,9 @@ export default async function MentorshipsPage() {
           <p className="mt-2 text-text-secondary">
             {access.company ?? access.clientName}
           </p>
+          <div className="mt-4">
+            <LiveMentorshipRefresh />
+          </div>
         </div>
         <span className="rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-medium text-primary-light">
           {statusLabel[access.clientStatus ?? ""] ?? access.clientStatus}

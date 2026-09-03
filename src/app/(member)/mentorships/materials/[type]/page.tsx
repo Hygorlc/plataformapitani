@@ -2,7 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
-import { StructuredContent } from "@/components/mentorships/StructuredContent";
+import { MentorshipContentAccordion } from "@/components/mentorships/StructuredContent";
 import { getMentorshipAccessByEmail } from "@/lib/data/mentorship";
 import { createClient } from "@/lib/supabase/server";
 
@@ -54,8 +54,8 @@ export default async function MentorshipMaterialPage({
           </div>
         </div>
 
-        <article className="mt-8 rounded-xl border border-border bg-surface p-6 lg:p-8">
-          <StructuredContent value={mentorshipModule.content} />
+        <article className="mt-8">
+          <MentorshipContentAccordion value={mentorshipModule.content} />
         </article>
       </div>
     </div>

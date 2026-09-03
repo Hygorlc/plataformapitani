@@ -150,7 +150,6 @@ export function MentorshipContentAccordion({ value }: { value: unknown }) {
       {sections.map(([key, section], index) => (
         <details
           key={key}
-          open={index === 0}
           className="group overflow-hidden rounded-xl border border-border bg-surface"
         >
           <summary className="flex cursor-pointer list-none items-center gap-4 px-5 py-4 transition-colors hover:bg-surface-hover">

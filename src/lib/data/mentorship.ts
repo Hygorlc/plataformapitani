@@ -19,6 +19,26 @@ export interface MentorshipEncounterSummary {
   scheduledAt: string | null;
 }
 
+export interface MentorshipTaskSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  owner: string;
+  deadline: string | null;
+  priority: string;
+  status: string;
+}
+
+export interface MentorshipFileSummary {
+  id: string;
+  name: string;
+  path: string | null;
+  type: string;
+  size: string | null;
+  visibleToClient: boolean;
+  createdAt: string | null;
+}
+
 export interface MentorshipAccess {
   state: "connected" | "not_found" | "unavailable";
   clientName: string | null;
@@ -31,6 +51,8 @@ export interface MentorshipAccess {
   completedTaskCount: number;
   modules: MentorshipModuleSummary[];
   encounters: MentorshipEncounterSummary[];
+  tasks: MentorshipTaskSummary[];
+  files: MentorshipFileSummary[];
 }
 
 const emptyAccess = (state: MentorshipAccess["state"]): MentorshipAccess => ({
@@ -45,6 +67,8 @@ const emptyAccess = (state: MentorshipAccess["state"]): MentorshipAccess => ({
   completedTaskCount: 0,
   modules: [],
   encounters: [],
+  tasks: [],
+  files: [],
 });
 
 function parseStoredArray(value: unknown): ExternalRecord[] {
@@ -130,6 +154,7 @@ export async function getMentorshipAccessByEmail(
     const tasks = asRecordArray(client.tasks);
     const modules = asRecordArray(client.modules);
     const encounters = asRecordArray(client.encounters);
+    const files = asRecordArray(client.files);
 
     return {
       state: "connected",
@@ -160,6 +185,24 @@ export async function getMentorshipAccessByEmail(
           scheduledAt: asString(encounter.data_agendada),
         }))
         .sort((a, b) => a.number - b.number),
+      tasks: tasks.map((task, index) => ({
+        id: asString(task.id) ?? `task-${index}`,
+        title: asString(task.titulo) ?? "Tarefa",
+        description: asString(task.descricao),
+        owner: asString(task.responsavel) ?? "equipe",
+        deadline: asString(task.prazo),
+        priority: asString(task.prioridade) ?? "media",
+        status: asString(task.status) ?? "pendente",
+      })),
+      files: files.map((file, index) => ({
+        id: asString(file.id) ?? `file-${index}`,
+        name: asString(file.nome) ?? "Arquivo",
+        path: asString(file.path),
+        type: asString(file.tipo) ?? "Arquivo",
+        size: asString(file.tamanho),
+        visibleToClient: file.visivel_cliente === true,
+        createdAt: asString(file.criado_em),
+      })),
     };
   } catch {
     return emptyAccess("unavailable");

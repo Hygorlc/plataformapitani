@@ -21,18 +21,19 @@ export default async function CatalogPage() {
 
   return (
     <div>
-      <section className="relative flex w-full items-center justify-center overflow-hidden border-b border-border bg-black px-4 py-5 md:px-8 md:py-8">
+      <section className="relative w-full overflow-hidden border-b border-border bg-black">
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.12),transparent_62%)]"
         />
         <Image
-          src="/alianca-empreendedora-convite.jpeg"
+          src="/alianca-empreendedora-banner-v2.png"
           alt="Convite Aliança Empreendedora — encontro presencial em Porto Alegre"
-          width={1024}
-          height={1280}
+          width={1672}
+          height={941}
           priority
-          className="relative h-auto max-h-[78vh] w-auto max-w-full rounded-sm object-contain shadow-2xl shadow-black ring-1 ring-primary/20"
+          sizes="100vw"
+          className="relative block h-auto max-h-[70vh] w-full object-cover object-center"
         />
       </section>
 

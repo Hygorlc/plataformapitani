@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCatalogCourses } from "@/lib/data/courses";
+import { getCatalogCourses, isStudentVisibleCourse } from "@/lib/data/courses";
 import { CourseRow } from "@/components/course/CourseRow";
 
 export default async function CatalogPage() {
@@ -11,7 +11,9 @@ export default async function CatalogPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const courses = await getCatalogCourses(supabase, user.id);
+  const courses = (await getCatalogCourses(supabase, user.id)).filter(
+    isStudentVisibleCourse
+  );
 
   const inProgress = courses.filter((c) => c.status === "in_progress");
   const newCourses = courses.filter((c) => c.status === "new");

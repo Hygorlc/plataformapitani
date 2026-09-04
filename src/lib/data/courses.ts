@@ -75,6 +75,15 @@ export function isPitaniCourseId(courseId: string): boolean {
   return courseId.startsWith("pitani-");
 }
 
+const STUDENT_VISIBLE_COURSE_SLUGS = new Set([
+  "domine-sua-rotina",
+  "neurovendas",
+]);
+
+export function isStudentVisibleCourse(course: Pick<CatalogCourse, "slug">): boolean {
+  return STUDENT_VISIBLE_COURSE_SLUGS.has(course.slug);
+}
+
 const NEW_WINDOW_DAYS = 14;
 
 export async function getCatalogCourses(

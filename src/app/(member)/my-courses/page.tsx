@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCatalogCourses } from "@/lib/data/courses";
+import { getCatalogCourses, isStudentVisibleCourse } from "@/lib/data/courses";
 import { CourseCard } from "@/components/course/CourseCard";
 
 export default async function MyCoursesPage() {
@@ -10,7 +10,9 @@ export default async function MyCoursesPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const courses = (await getCatalogCourses(supabase, user.id)).filter((c) => c.enrolled);
+  const courses = (await getCatalogCourses(supabase, user.id)).filter(
+    (course) => course.enrolled && isStudentVisibleCourse(course)
+  );
 
   return (
     <div className="px-6 py-8 lg:px-12">

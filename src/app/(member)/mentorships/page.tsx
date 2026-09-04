@@ -7,7 +7,6 @@ import {
   CalendarDays,
   CheckCircle2,
   Fingerprint,
-  Layers3,
   ListChecks,
   PenTool,
   Stethoscope,
@@ -20,6 +19,8 @@ import {
   getMentorshipAccessesByEmail,
 } from "@/lib/data/mentorship";
 import { LiveMentorshipRefresh } from "@/components/mentorships/LiveMentorshipRefresh";
+import { CourseCover } from "@/components/course/CourseCover";
+import { Badge } from "@/components/ui/Badge";
 
 const statusLabel: Record<string, string> = {
   ativo: "Ativa",
@@ -103,36 +104,47 @@ export default async function MentorshipsPage({
     !selectedClientId
   ) {
     return (
-      <div className="px-6 py-10 lg:px-12">
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">
-          Suas mentorias
+      <div className="px-6 py-8 lg:px-12">
+        <h1 className="text-2xl font-semibold text-text-primary">Minhas Mentorias</h1>
+        <p className="mt-1 text-text-secondary">
+          Escolha a mentoria que deseja acessar.
         </p>
-        <h1 className="mt-2 text-3xl font-semibold text-text-primary">
-          Escolha onde deseja entrar
-        </h1>
-        <p className="mt-2 text-text-secondary">
-          Encontramos mais de um produto vinculado ao seu e-mail.
-        </p>
-        <div className="mt-7 grid gap-5 md:grid-cols-2">
+        <div className="mt-6 flex flex-wrap gap-5">
           {collection.items.map((item) => (
             <Link
               key={item.clientId}
               href={`/mentorships?client=${encodeURIComponent(item.clientId!)}`}
-              className="group rounded-2xl border border-border bg-surface p-6 transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:bg-surface-hover"
+              className="group/card relative w-72 shrink-0 sm:w-80"
             >
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Layers3 size={24} />
-              </span>
-              <h2 className="mt-5 text-xl font-semibold text-text-primary">
-                {item.productName}
-              </h2>
-              <p className="mt-2 text-sm text-text-secondary">
-                {item.company ?? item.clientName}
-              </p>
-              <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary">
-                Entrar nesta mentoria
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </span>
+              <div className="relative aspect-video overflow-hidden rounded-md ring-1 ring-border transition-all duration-300 ease-out group-hover/card:z-20 group-hover/card:scale-105 group-hover/card:ring-primary/60 group-hover/card:shadow-2xl group-hover/card:shadow-black/60">
+                <CourseCover
+                  title={item.productName ?? "Mentoria"}
+                  size={72}
+                  className="absolute inset-0"
+                />
+                <div className="absolute left-3 top-3 z-20">
+                  <Badge status="progress">
+                    <span className="text-sm font-bold">Entrar</span>
+                  </Badge>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover/card:opacity-100">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-background">
+                    <ArrowRight size={19} />
+                  </span>
+                </div>
+              </div>
+              <div className="mt-3 space-y-1 px-0.5">
+                <p className="truncate text-xs text-text-muted">Mentorias</p>
+                <h2 className="truncate text-base font-semibold leading-tight text-text-primary">
+                  {item.productName}
+                </h2>
+                <p className="truncate text-xs text-text-secondary">
+                  {item.company ?? item.clientName}
+                </p>
+                <p className="truncate text-sm font-medium text-emerald-500">
+                  Acesso liberado
+                </p>
+              </div>
             </Link>
           ))}
         </div>

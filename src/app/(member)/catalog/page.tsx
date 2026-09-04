@@ -35,6 +35,14 @@ export default async function CatalogPage() {
           sizes="100vw"
           className="relative block h-auto max-h-[64vh] w-auto max-w-full object-contain"
         />
+        <a
+          href="https://aliancaempreendedora.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-6 right-6 z-10 rounded-lg border border-primary/70 bg-black/85 px-5 py-3 text-sm font-semibold text-primary shadow-xl backdrop-blur-sm transition-colors hover:bg-primary hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:bottom-8 md:right-10"
+        >
+          Mais informações
+        </a>
       </section>
 
       <div className="flex flex-col gap-10 py-8">

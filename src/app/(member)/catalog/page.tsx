@@ -33,7 +33,7 @@ export default async function CatalogPage() {
           height={941}
           priority
           sizes="100vw"
-          className="relative block h-auto max-h-[64vh] w-auto max-w-full object-contain"
+          className="event-banner-zoom relative block h-auto max-h-[64vh] w-auto max-w-full object-contain"
         />
         <a
           href="https://aliancaempreendedora.com/"

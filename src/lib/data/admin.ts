@@ -104,7 +104,7 @@ export interface AdminUserRow {
   id: string;
   email: string;
   full_name: string | null;
-  role: "student" | "admin";
+  role: "student" | "admin" | "client";
   created_at: string;
   enrolledCourseIds: string[];
 }

@@ -10,7 +10,9 @@ import type { Database } from "@/types/database.types";
 export function createAdminClient() {
   return createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    // This is the server key for the single consolidated Supabase project.
+    // The legacy variable name remains in Vercel to avoid copying the secret.
+    process.env.MENTORSHIP_SUPABASE_SECRET_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }

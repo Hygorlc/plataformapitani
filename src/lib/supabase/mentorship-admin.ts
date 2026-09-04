@@ -1,18 +1,10 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export function createMentorshipAdminClient() {
-  const url = process.env.MENTORSHIP_SUPABASE_URL;
-  const secretKey = process.env.MENTORSHIP_SUPABASE_SECRET_KEY;
-
-  if (!url || !secretKey) return null;
-
-  return createClient(url, secretKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-    },
-  });
+  // Courses, authentication and mentorships now share the same Supabase
+  // project. Keep this wrapper temporarily so mentorship data callers do not
+  // need a risky large-scale rewrite.
+  return createAdminClient();
 }

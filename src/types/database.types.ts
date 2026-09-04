@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          key: string
+          value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          key?: string
+          value?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       certificates: {
         Row: {
           certificate_number: string
@@ -52,6 +70,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      client_settings: {
+        Row: {
+          client_id: string
+          produto: string | null
+        }
+        Insert: {
+          client_id: string
+          produto?: string | null
+        }
+        Update: {
+          client_id?: string
+          produto?: string | null
+        }
+        Relationships: []
       }
       comment_reactions: {
         Row: {
@@ -559,27 +592,33 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          client_id: string | null
           created_at: string
           full_name: string | null
           id: string
+          must_change_password: boolean
           promotion_started_at: string
           role: Database["public"]["Enums"]["user_role"]
           student_since: string | null
         }
         Insert: {
           avatar_url?: string | null
+          client_id?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          must_change_password?: boolean
           promotion_started_at?: string
           role?: Database["public"]["Enums"]["user_role"]
           student_since?: string | null
         }
         Update: {
           avatar_url?: string | null
+          client_id?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          must_change_password?: boolean
           promotion_started_at?: string
           role?: Database["public"]["Enums"]["user_role"]
           student_since?: string | null
@@ -595,7 +634,7 @@ export type Database = {
       is_enrolled: { Args: { p_course_id: string }; Returns: boolean }
     }
     Enums: {
-      user_role: "student" | "admin"
+      user_role: "student" | "admin" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -723,7 +762,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      user_role: ["student", "admin"],
+      user_role: ["student", "admin", "client"],
     },
   },
 } as const

@@ -23,6 +23,22 @@ const COVER_TYPES: Record<string, string> = {
   "image/png": "png",
 };
 
+async function requireAdmin() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Não autenticado.");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "admin") throw new Error("Acesso não autorizado.");
+  return user;
+}
+
 async function uploadCoverImage(file: File, slug: string): Promise<string> {
   const ext = COVER_TYPES[file.type];
   if (!ext) throw new Error("A imagem deve ser JPG ou PNG.");
@@ -426,6 +442,7 @@ export async function uploadLessonMaterial(
   courseId: string,
   formData: FormData
 ) {
+  await requireAdmin();
   const file = formData.get("file");
   const customTitle = String(formData.get("title") ?? "").trim();
   if (!(file instanceof File) || file.size === 0) {
@@ -450,15 +467,14 @@ export async function uploadLessonMaterial(
     });
   if (uploadError) throw new Error(`Falha no envio: ${uploadError.message}`);
 
-  const { data: publicUrl } = admin.storage
-    .from("lesson-materials")
-    .getPublicUrl(storagePath);
   const { error: insertError } = await admin.from("lesson_materials").insert({
     course_id: courseId,
     lesson_id: lessonId,
     title: customTitle || file.name,
     file_name: file.name,
-    file_url: publicUrl.publicUrl,
+    // Kept for backwards-compatible database types. Downloads are served by
+    // an authenticated route that generates a short-lived signed URL.
+    file_url: storagePath,
     storage_path: storagePath,
     file_size_bytes: file.size,
     mime_type: file.type || null,
@@ -476,6 +492,7 @@ export async function deleteLessonMaterial(
   materialId: string,
   courseId: string
 ) {
+  await requireAdmin();
   const admin = createAdminClient();
   const { data: material } = await admin
     .from("lesson_materials")

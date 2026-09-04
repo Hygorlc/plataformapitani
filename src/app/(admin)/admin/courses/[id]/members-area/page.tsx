@@ -132,7 +132,7 @@ export default async function CourseMembersAreaPage({
                               className="flex items-center justify-between gap-3 rounded-md bg-surface px-3 py-2"
                             >
                               <a
-                                href={material.file_url}
+                                href={`/api/materials/${material.id}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="min-w-0 truncate text-sm text-primary hover:underline"

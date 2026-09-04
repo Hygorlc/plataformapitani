@@ -56,7 +56,11 @@ export async function login(
 ): Promise<AuthFormState> {
   const email = normalizeAssignmentEmail(String(formData.get("email") ?? ""));
   const password = String(formData.get("password") ?? "");
-  const redirectTo = String(formData.get("redirectTo") ?? "") || "/catalog";
+  const requestedRedirect = String(formData.get("redirectTo") ?? "");
+  const redirectTo =
+    requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//")
+      ? requestedRedirect
+      : "/catalog";
 
   if (!email || !password) {
     return { error: "Preencha todos os campos." };

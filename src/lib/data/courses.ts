@@ -325,7 +325,7 @@ export async function getCourseDetail(
             id: material.id,
             title: material.title,
             file_name: material.file_name,
-            file_url: material.file_url,
+            file_url: `/api/materials/${material.id}`,
             file_size_bytes: material.file_size_bytes,
             mime_type: material.mime_type,
           })),

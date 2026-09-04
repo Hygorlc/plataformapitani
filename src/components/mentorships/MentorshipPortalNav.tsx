@@ -15,6 +15,10 @@ export function MentorshipPortalNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const clientId = searchParams.get("client");
+  const productId = searchParams.get("product");
+  const selectionQuery = new URLSearchParams();
+  if (clientId) selectionQuery.set("client", clientId);
+  if (productId) selectionQuery.set("product", productId);
 
   return (
     <aside className="border-b border-border bg-surface/70 lg:min-h-[calc(100vh-4rem)] lg:w-64 lg:shrink-0 lg:border-b-0 lg:border-r">
@@ -30,7 +34,7 @@ export function MentorshipPortalNav() {
           return (
             <Link
               key={href}
-              href={clientId ? `${href}?client=${encodeURIComponent(clientId)}` : href}
+              href={selectionQuery.size ? `${href}?${selectionQuery.toString()}` : href}
               className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:w-full ${
                 active
                   ? "bg-primary text-background"

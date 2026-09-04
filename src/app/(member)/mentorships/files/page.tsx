@@ -23,13 +23,13 @@ function formatFileDate(value: string | null) {
     : `Adicionado em ${date.toLocaleDateString("pt-BR")}`;
 }
 
-export default async function MentorshipFilesPage({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
+export default async function MentorshipFilesPage({ searchParams }: { searchParams: Promise<{ client?: string; product?: string }> }) {
   await connection();
-  const { client: selectedClientId } = await searchParams;
+  const { client: selectedClientId, product: selectedProductId } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) redirect("/login");
-  const access = await getMentorshipAccessByEmail(user.email, selectedClientId);
+  const access = await getMentorshipAccessByEmail(user.email, selectedClientId, selectedProductId);
   if (access.state !== "connected") notFound();
   const files = access.files.filter((file) => file.visibleToClient);
 

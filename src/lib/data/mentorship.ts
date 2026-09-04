@@ -42,6 +42,7 @@ export interface MentorshipFileSummary {
 export interface MentorshipAccess {
   state: "connected" | "not_found" | "unavailable";
   clientId: string | null;
+  productId: string | null;
   clientName: string | null;
   company: string | null;
   productName: string | null;
@@ -59,6 +60,7 @@ export interface MentorshipAccess {
 const emptyAccess = (state: MentorshipAccess["state"]): MentorshipAccess => ({
   state,
   clientId: null,
+  productId: null,
   clientName: null,
   company: null,
   productName: null,
@@ -87,6 +89,24 @@ function parseStoredArray(value: unknown): ExternalRecord[] {
   }
 }
 
+function parseStoredStringArrayMap(value: unknown): Record<string, string[]> {
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+
+    return Object.fromEntries(
+      Object.entries(parsed).map(([key, items]) => [
+        key,
+        Array.isArray(items)
+          ? items.filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+          : [],
+      ])
+    );
+  } catch {
+    return {};
+  }
+}
+
 function asString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -102,13 +122,18 @@ function asRecordArray(value: unknown): ExternalRecord[] {
 
 export async function getMentorshipAccessByEmail(
   rawEmail: string,
-  selectedClientId?: string | null
+  selectedClientId?: string | null,
+  selectedProductId?: string | null
 ): Promise<MentorshipAccess> {
   const collection = await getMentorshipAccessesByEmail(rawEmail);
   if (collection.state !== "connected") return emptyAccess(collection.state);
   if (!selectedClientId) return collection.items[0] ?? emptyAccess("not_found");
   return (
-    collection.items.find((access) => access.clientId === selectedClientId) ??
+    collection.items.find(
+      (access) =>
+        access.clientId === selectedClientId &&
+        (!selectedProductId || access.productId === selectedProductId)
+    ) ??
     emptyAccess("not_found")
   );
 }
@@ -139,14 +164,14 @@ export async function getMentorshipAccessesByEmail(
       .eq("id", externalUser.id)
       .maybeSingle();
     if (profileError) return { state: "unavailable", items: [] };
-    if (!profile?.client_id || profile.role !== "client") {
+    if (!profile || profile.role !== "client") {
       return { state: "not_found", items: [] };
     }
 
     const { data: settings, error: settingsError } = await mentorship
       .from("app_settings")
       .select("key, value")
-      .in("key", ["clients", "produtos"]);
+      .in("key", ["clients", "produtos", "user_client_ids", "client_products"]);
     if (settingsError) return { state: "unavailable", items: [] };
 
     const clients = parseStoredArray(
@@ -155,10 +180,18 @@ export async function getMentorshipAccessesByEmail(
     const products = parseStoredArray(
       settings?.find((item) => item.key === "produtos")?.value
     );
+    const userClientIds = parseStoredStringArrayMap(
+      settings?.find((item) => item.key === "user_client_ids")?.value
+    );
+    const clientProducts = parseStoredStringArrayMap(
+      settings?.find((item) => item.key === "client_products")?.value
+    );
+    const assignedClientIds = new Set(userClientIds[externalUser.id] ?? []);
     const eligibleClients = clients.filter((client) => {
       const clientId = asString(client.id);
       if (!clientId) return false;
       if (clientId === profile.client_id) return true;
+      if (assignedClientIds.has(clientId)) return true;
       const registeredEmails = [client.email, client.contato_email, client.contato]
         .map((value) => normalizeAssignmentEmail(asString(value) ?? ""))
         .filter(Boolean);
@@ -175,22 +208,31 @@ export async function getMentorshipAccessesByEmail(
       .in("client_id", clientIds);
     if (productSettingsError) return { state: "unavailable", items: [] };
 
-    const items = eligibleClients.map((client): MentorshipAccess => {
+    const items = eligibleClients.flatMap((client): MentorshipAccess[] => {
       const clientId = asString(client.id)!;
       const productSetting = productSettings?.find(
         (setting) => setting.client_id === clientId
       );
-      const productId =
+      const fallbackProductId =
         asString(productSetting?.produto) ?? asString(client.produto) ?? "id_master";
-      const product = products.find((item) => item.id === productId);
+      const productIds = Array.from(
+        new Set(
+          clientProducts[clientId]?.length
+            ? clientProducts[clientId]
+            : [fallbackProductId]
+        )
+      );
       const tasks = asRecordArray(client.tasks);
       const modules = asRecordArray(client.modules);
       const encounters = asRecordArray(client.encounters);
       const files = asRecordArray(client.files);
 
-      return {
+      return productIds.map((productId): MentorshipAccess => {
+        const product = products.find((item) => item.id === productId);
+        return {
       state: "connected",
       clientId,
+      productId,
       clientName: asString(client.nome),
       company: asString(client.empresa),
       productName: asString(product?.nome) ?? productId,
@@ -236,7 +278,8 @@ export async function getMentorshipAccessesByEmail(
         visibleToClient: file.visivel_cliente === true,
         createdAt: asString(file.criado_em),
       })),
-      };
+        };
+      });
     });
 
     return { state: "connected", items };

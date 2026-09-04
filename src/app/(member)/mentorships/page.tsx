@@ -87,10 +87,10 @@ function formatDate(value: string | null) {
 export default async function MentorshipsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string }>;
+  searchParams: Promise<{ client?: string; product?: string }>;
 }) {
   await connection();
-  const { client: selectedClientId } = await searchParams;
+  const { client: selectedClientId, product: selectedProductId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -112,8 +112,8 @@ export default async function MentorshipsPage({
         <div className="mt-6 flex flex-wrap gap-5">
           {collection.items.map((item) => (
             <Link
-              key={item.clientId}
-              href={`/mentorships?client=${encodeURIComponent(item.clientId!)}`}
+              key={`${item.clientId}:${item.productId}`}
+              href={`/mentorships?client=${encodeURIComponent(item.clientId!)}&product=${encodeURIComponent(item.productId ?? "")}`}
               className="group/card relative w-72 shrink-0 sm:w-80"
             >
               <div className="relative aspect-video overflow-hidden rounded-md ring-1 ring-border transition-all duration-300 ease-out group-hover/card:z-20 group-hover/card:scale-105 group-hover/card:ring-primary/60 group-hover/card:shadow-2xl group-hover/card:shadow-black/60">
@@ -153,7 +153,11 @@ export default async function MentorshipsPage({
   }
 
   const access = selectedClientId
-    ? collection.items.find((item) => item.clientId === selectedClientId)
+    ? collection.items.find(
+        (item) =>
+          item.clientId === selectedClientId &&
+          (!selectedProductId || item.productId === selectedProductId)
+      )
     : collection.items[0];
 
   if (!access) {
@@ -265,6 +269,7 @@ export default async function MentorshipsPage({
                 key={module.type}
                 module={module}
                 clientId={access.clientId}
+                productId={access.productId}
               />
             ))
           ) : (
@@ -279,9 +284,11 @@ export default async function MentorshipsPage({
 function MentorshipModuleCard({
   module,
   clientId,
+  productId,
 }: {
   module: { type: string; title: string; status: string };
   clientId: string | null;
+  productId: string | null;
 }) {
   const available = module.status === "publicado";
   const presentation = getModulePresentation(module.type);
@@ -334,7 +341,7 @@ function MentorshipModuleCard({
 
   return (
     <Link
-      href={`/mentorships/materials/${encodeURIComponent(module.type)}?client=${encodeURIComponent(clientId ?? "")}`}
+      href={`/mentorships/materials/${encodeURIComponent(module.type)}?client=${encodeURIComponent(clientId ?? "")}&product=${encodeURIComponent(productId ?? "")}`}
       className={`${cardClassName} hover:-translate-y-0.5 hover:border-primary/60 hover:bg-surface-hover hover:shadow-[0_16px_40px_rgba(0,0,0,0.28)]`}
     >
       {content}

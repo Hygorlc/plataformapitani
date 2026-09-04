@@ -41,6 +41,7 @@ export interface MentorshipFileSummary {
 
 export interface MentorshipAccess {
   state: "connected" | "not_found" | "unavailable";
+  clientId: string | null;
   clientName: string | null;
   company: string | null;
   productName: string | null;
@@ -57,6 +58,7 @@ export interface MentorshipAccess {
 
 const emptyAccess = (state: MentorshipAccess["state"]): MentorshipAccess => ({
   state,
+  clientId: null,
   clientName: null,
   company: null,
   productName: null,
@@ -99,45 +101,53 @@ function asRecordArray(value: unknown): ExternalRecord[] {
 }
 
 export async function getMentorshipAccessByEmail(
-  rawEmail: string
+  rawEmail: string,
+  selectedClientId?: string | null
 ): Promise<MentorshipAccess> {
+  const collection = await getMentorshipAccessesByEmail(rawEmail);
+  if (collection.state !== "connected") return emptyAccess(collection.state);
+  if (!selectedClientId) return collection.items[0] ?? emptyAccess("not_found");
+  return (
+    collection.items.find((access) => access.clientId === selectedClientId) ??
+    emptyAccess("not_found")
+  );
+}
+
+export async function getMentorshipAccessesByEmail(
+  rawEmail: string
+): Promise<{
+  state: MentorshipAccess["state"];
+  items: MentorshipAccess[];
+}> {
   const email = normalizeAssignmentEmail(rawEmail);
   const mentorship = createMentorshipAdminClient();
-  if (!email || !mentorship) return emptyAccess("unavailable");
+  if (!email || !mentorship) return { state: "unavailable", items: [] };
 
   try {
     const { data: usersData, error: usersError } =
       await mentorship.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (usersError) return emptyAccess("unavailable");
+    if (usersError) return { state: "unavailable", items: [] };
 
     const externalUser = usersData.users.find(
       (user) => normalizeAssignmentEmail(user.email ?? "") === email
     );
-    if (!externalUser) return emptyAccess("not_found");
+    if (!externalUser) return { state: "not_found", items: [] };
 
     const { data: profile, error: profileError } = await mentorship
       .from("profiles")
       .select("role, client_id")
       .eq("id", externalUser.id)
       .maybeSingle();
-    if (profileError) return emptyAccess("unavailable");
+    if (profileError) return { state: "unavailable", items: [] };
     if (!profile?.client_id || profile.role !== "client") {
-      return emptyAccess("not_found");
+      return { state: "not_found", items: [] };
     }
 
-    const [{ data: settings, error: settingsError }, { data: productSetting }] =
-      await Promise.all([
-        mentorship
-          .from("app_settings")
-          .select("key, value")
-          .in("key", ["clients", "produtos"]),
-        mentorship
-          .from("client_settings")
-          .select("produto")
-          .eq("client_id", profile.client_id)
-          .maybeSingle(),
-      ]);
-    if (settingsError) return emptyAccess("unavailable");
+    const { data: settings, error: settingsError } = await mentorship
+      .from("app_settings")
+      .select("key, value")
+      .in("key", ["clients", "produtos"]);
+    if (settingsError) return { state: "unavailable", items: [] };
 
     const clients = parseStoredArray(
       settings?.find((item) => item.key === "clients")?.value
@@ -145,19 +155,42 @@ export async function getMentorshipAccessByEmail(
     const products = parseStoredArray(
       settings?.find((item) => item.key === "produtos")?.value
     );
-    const client = clients.find((item) => item.id === profile.client_id);
-    if (!client) return emptyAccess("not_found");
+    const eligibleClients = clients.filter((client) => {
+      const clientId = asString(client.id);
+      if (!clientId) return false;
+      if (clientId === profile.client_id) return true;
+      const registeredEmails = [client.email, client.contato_email, client.contato]
+        .map((value) => normalizeAssignmentEmail(asString(value) ?? ""))
+        .filter(Boolean);
+      return registeredEmails.includes(email);
+    });
+    if (!eligibleClients.length) return { state: "not_found", items: [] };
 
-    const productId =
-      asString(productSetting?.produto) ?? asString(client.produto) ?? "id_master";
-    const product = products.find((item) => item.id === productId);
-    const tasks = asRecordArray(client.tasks);
-    const modules = asRecordArray(client.modules);
-    const encounters = asRecordArray(client.encounters);
-    const files = asRecordArray(client.files);
+    const clientIds = eligibleClients
+      .map((client) => asString(client.id))
+      .filter((value): value is string => Boolean(value));
+    const { data: productSettings, error: productSettingsError } = await mentorship
+      .from("client_settings")
+      .select("client_id, produto")
+      .in("client_id", clientIds);
+    if (productSettingsError) return { state: "unavailable", items: [] };
 
-    return {
+    const items = eligibleClients.map((client): MentorshipAccess => {
+      const clientId = asString(client.id)!;
+      const productSetting = productSettings?.find(
+        (setting) => setting.client_id === clientId
+      );
+      const productId =
+        asString(productSetting?.produto) ?? asString(client.produto) ?? "id_master";
+      const product = products.find((item) => item.id === productId);
+      const tasks = asRecordArray(client.tasks);
+      const modules = asRecordArray(client.modules);
+      const encounters = asRecordArray(client.encounters);
+      const files = asRecordArray(client.files);
+
+      return {
       state: "connected",
+      clientId,
       clientName: asString(client.nome),
       company: asString(client.empresa),
       productName: asString(product?.nome) ?? productId,
@@ -203,8 +236,11 @@ export async function getMentorshipAccessByEmail(
         visibleToClient: file.visivel_cliente === true,
         createdAt: asString(file.criado_em),
       })),
-    };
+      };
+    });
+
+    return { state: "connected", items };
   } catch {
-    return emptyAccess("unavailable");
+    return { state: "unavailable", items: [] };
   }
 }

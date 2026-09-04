@@ -47,12 +47,13 @@ function TaskCard({ task, completed = false }: { task: MentorshipTaskSummary; co
   );
 }
 
-export default async function MentorshipTasksPage() {
+export default async function MentorshipTasksPage({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   await connection();
+  const { client: selectedClientId } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) redirect("/login");
-  const access = await getMentorshipAccessByEmail(user.email);
+  const access = await getMentorshipAccessByEmail(user.email, selectedClientId);
   if (access.state !== "connected") notFound();
 
   const clientTasks = access.tasks.filter((task) => task.owner === "cliente");

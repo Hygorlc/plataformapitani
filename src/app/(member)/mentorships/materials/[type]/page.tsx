@@ -8,11 +8,14 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function MentorshipMaterialPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ type: string }>;
+  searchParams: Promise<{ client?: string }>;
 }) {
   await connection();
   const { type } = await params;
+  const { client: selectedClientId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,7 +23,7 @@ export default async function MentorshipMaterialPage({
 
   if (!user?.email) redirect("/login");
 
-  const access = await getMentorshipAccessByEmail(user.email);
+  const access = await getMentorshipAccessByEmail(user.email, selectedClientId);
   if (access.state !== "connected") notFound();
 
   const mentorshipModule = access.modules.find(
@@ -31,7 +34,7 @@ export default async function MentorshipMaterialPage({
   return (
     <div className="px-6 py-10 lg:px-12">
       <Link
-        href="/mentorships"
+        href={selectedClientId ? `/mentorships?client=${encodeURIComponent(selectedClientId)}` : "/mentorships"}
         className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
       >
         <ArrowLeft size={16} />

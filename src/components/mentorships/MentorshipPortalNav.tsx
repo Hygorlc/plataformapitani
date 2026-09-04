@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { BookOpen, CheckSquare, FileText, Video } from "lucide-react";
 
 const items = [
@@ -13,6 +13,8 @@ const items = [
 
 export function MentorshipPortalNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const clientId = searchParams.get("client");
 
   return (
     <aside className="border-b border-border bg-surface/70 lg:min-h-[calc(100vh-4rem)] lg:w-64 lg:shrink-0 lg:border-b-0 lg:border-r">
@@ -28,7 +30,7 @@ export function MentorshipPortalNav() {
           return (
             <Link
               key={href}
-              href={href}
+              href={clientId ? `${href}?client=${encodeURIComponent(clientId)}` : href}
               className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:w-full ${
                 active
                   ? "bg-primary text-background"

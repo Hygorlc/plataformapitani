@@ -21,7 +21,7 @@ export default async function CatalogPage() {
 
   return (
     <div>
-      <section className="relative w-full overflow-hidden border-b border-border bg-black">
+      <section className="relative flex w-full items-center justify-center overflow-hidden border-b border-border bg-black px-3 py-3 md:px-6 md:py-5">
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.12),transparent_62%)]"
@@ -33,7 +33,7 @@ export default async function CatalogPage() {
           height={941}
           priority
           sizes="100vw"
-          className="relative block h-auto max-h-[70vh] w-full object-cover object-center"
+          className="relative block h-auto max-h-[64vh] w-auto max-w-full object-contain"
         />
       </section>
 

@@ -11,11 +11,11 @@ export default async function MentorshipMaterialPage({
   searchParams,
 }: {
   params: Promise<{ type: string }>;
-  searchParams: Promise<{ client?: string }>;
+  searchParams: Promise<{ client?: string; product?: string }>;
 }) {
   await connection();
   const { type } = await params;
-  const { client: selectedClientId } = await searchParams;
+  const { client: selectedClientId, product: selectedProductId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -23,7 +23,7 @@ export default async function MentorshipMaterialPage({
 
   if (!user?.email) redirect("/login");
 
-  const access = await getMentorshipAccessByEmail(user.email, selectedClientId);
+  const access = await getMentorshipAccessByEmail(user.email, selectedClientId, selectedProductId);
   if (access.state !== "connected") notFound();
 
   const mentorshipModule = access.modules.find(
@@ -34,7 +34,7 @@ export default async function MentorshipMaterialPage({
   return (
     <div className="px-6 py-10 lg:px-12">
       <Link
-        href={selectedClientId ? `/mentorships?client=${encodeURIComponent(selectedClientId)}` : "/mentorships"}
+        href={selectedClientId ? `/mentorships?client=${encodeURIComponent(selectedClientId)}&product=${encodeURIComponent(selectedProductId ?? "")}` : "/mentorships"}
         className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
       >
         <ArrowLeft size={16} />

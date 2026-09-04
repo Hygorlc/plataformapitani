@@ -5,13 +5,14 @@ import { LiveMentorshipRefresh } from "@/components/mentorships/LiveMentorshipRe
 import { getMentorshipAccessByEmail } from "@/lib/data/mentorship";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function MentorshipContentPage() {
+export default async function MentorshipContentPage({ searchParams }: { searchParams: Promise<{ client?: string }> }) {
   await connection();
+  const { client: selectedClientId } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) redirect("/login");
 
-  const access = await getMentorshipAccessByEmail(user.email);
+  const access = await getMentorshipAccessByEmail(user.email, selectedClientId);
   if (access.state !== "connected") notFound();
   const contentModule = access.modules.find((module) => module.type === "conteudos");
 

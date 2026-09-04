@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Fingerprint,
+  Layers3,
   ListChecks,
   PenTool,
   Stethoscope,
@@ -15,7 +16,9 @@ import {
   UserRound,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getMentorshipAccessByEmail } from "@/lib/data/mentorship";
+import {
+  getMentorshipAccessesByEmail,
+} from "@/lib/data/mentorship";
 import { LiveMentorshipRefresh } from "@/components/mentorships/LiveMentorshipRefresh";
 
 const statusLabel: Record<string, string> = {
@@ -80,17 +83,68 @@ function formatDate(value: string | null) {
     : date.toLocaleDateString("pt-BR");
 }
 
-export default async function MentorshipsPage() {
+export default async function MentorshipsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ client?: string }>;
+}) {
   await connection();
+  const { client: selectedClientId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user?.email) redirect("/login");
 
-  const access = await getMentorshipAccessByEmail(user.email);
+  const collection = await getMentorshipAccessesByEmail(user.email);
+  if (
+    collection.state === "connected" &&
+    collection.items.length > 1 &&
+    !selectedClientId
+  ) {
+    return (
+      <div className="px-6 py-10 lg:px-12">
+        <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">
+          Suas mentorias
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold text-text-primary">
+          Escolha onde deseja entrar
+        </h1>
+        <p className="mt-2 text-text-secondary">
+          Encontramos mais de um produto vinculado ao seu e-mail.
+        </p>
+        <div className="mt-7 grid gap-5 md:grid-cols-2">
+          {collection.items.map((item) => (
+            <Link
+              key={item.clientId}
+              href={`/mentorships?client=${encodeURIComponent(item.clientId!)}`}
+              className="group rounded-2xl border border-border bg-surface p-6 transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:bg-surface-hover"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Layers3 size={24} />
+              </span>
+              <h2 className="mt-5 text-xl font-semibold text-text-primary">
+                {item.productName}
+              </h2>
+              <p className="mt-2 text-sm text-text-secondary">
+                {item.company ?? item.clientName}
+              </p>
+              <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                Entrar nesta mentoria
+                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  if (access.state !== "connected") {
+  const access = selectedClientId
+    ? collection.items.find((item) => item.clientId === selectedClientId)
+    : collection.items[0];
+
+  if (!access) {
     return (
       <div className="px-6 py-10 lg:px-12">
         <h1 className="text-2xl font-semibold text-text-primary">Mentorias</h1>
@@ -99,12 +153,12 @@ export default async function MentorshipsPage() {
         </div>
         <div className="mt-6 max-w-2xl rounded-xl border border-border bg-surface p-6">
           <h2 className="font-semibold text-text-primary">
-            {access.state === "unavailable"
+            {collection.state === "unavailable"
               ? "Mentorias temporariamente indisponíveis"
               : "Nenhuma mentoria vinculada"}
           </h2>
           <p className="mt-2 text-sm text-text-secondary">
-            {access.state === "unavailable"
+            {collection.state === "unavailable"
               ? "Seus cursos continuam disponíveis normalmente. Tente acessar esta área novamente em alguns instantes."
               : "Quando uma mentoria for liberada para o seu e-mail, ela aparecerá automaticamente aqui."}
           </p>
@@ -134,9 +188,19 @@ export default async function MentorshipsPage() {
             <LiveMentorshipRefresh />
           </div>
         </div>
-        <span className="rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-medium text-primary-light">
-          {statusLabel[access.clientStatus ?? ""] ?? access.clientStatus}
-        </span>
+        <div className="flex items-center gap-3">
+          {collection.items.length > 1 && (
+            <Link
+              href="/mentorships"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary hover:border-primary/50 hover:text-primary"
+            >
+              Trocar mentoria
+            </Link>
+          )}
+          <span className="rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-medium text-primary-light">
+            {statusLabel[access.clientStatus ?? ""] ?? access.clientStatus}
+          </span>
+        </div>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -185,7 +249,11 @@ export default async function MentorshipsPage() {
         <div className="mt-7 grid gap-5 lg:grid-cols-2">
           {access.modules.length ? (
             access.modules.map((module) => (
-              <MentorshipModuleCard key={module.type} module={module} />
+              <MentorshipModuleCard
+                key={module.type}
+                module={module}
+                clientId={access.clientId}
+              />
             ))
           ) : (
             <p className="text-text-secondary">Nenhum material cadastrado ainda.</p>
@@ -198,8 +266,10 @@ export default async function MentorshipsPage() {
 
 function MentorshipModuleCard({
   module,
+  clientId,
 }: {
   module: { type: string; title: string; status: string };
+  clientId: string | null;
 }) {
   const available = module.status === "publicado";
   const presentation = getModulePresentation(module.type);
@@ -252,7 +322,7 @@ function MentorshipModuleCard({
 
   return (
     <Link
-      href={`/mentorships/materials/${encodeURIComponent(module.type)}`}
+      href={`/mentorships/materials/${encodeURIComponent(module.type)}?client=${encodeURIComponent(clientId ?? "")}`}
       className={`${cardClassName} hover:-translate-y-0.5 hover:border-primary/60 hover:bg-surface-hover hover:shadow-[0_16px_40px_rgba(0,0,0,0.28)]`}
     >
       {content}
